@@ -117,86 +117,86 @@ async function downloadAll() {
 }
 
 
-async function logout() {
-    try {
-        const response = await fetch('/logout', {
-            method: 'POST',
-            credentials: 'include'
-        });
+// async function logout() {
+//     try {
+//         const response = await fetch('/logout', {
+//             method: 'POST',
+//             credentials: 'include'
+//         });
         
-        if (response.ok) {
-            window.location.href = "/";
-        } else {
-            console.error('Logout failed');
-            window.location.href = "/";
-        }
-    } catch (err) {
-        console.error('Logout error:', err);
-        window.location.href = "/";
-    }
-}
-async function startCallProcessing() {
-    console.log("Start Call Processing clicked"); // 👈 ADD THIS
-    const fileDetails = document.getElementById("fileDetails");
+//         if (response.ok) {
+//             window.location.href = "/";
+//         } else {
+//             console.error('Logout failed');
+//             window.location.href = "/";
+//         }
+//     } catch (err) {
+//         console.error('Logout error:', err);
+//         window.location.href = "/";
+//     }
+// }
+// async function startCallProcessing() {
+//     console.log("Start Call Processing clicked"); // 👈 ADD THIS
+//     const fileDetails = document.getElementById("fileDetails");
 
-    try {
-        fileDetails.innerHTML += '<br><span style="color: blue;">Processing file...</span>';
+//     try {
+//         fileDetails.innerHTML += '<br><span style="color: blue;">Processing file...</span>';
 
-        const response = await fetch("/add-call", {
-            method: "POST",
-            credentials: 'include'
-        });
+//         const response = await fetch("/add-call", {
+//             method: "POST",
+//             credentials: 'include'
+//         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Processing failed:", errorText);
-            fileDetails.innerHTML += `<br><span style="color: red;">Processing failed: ${response.status} - ${errorText}</span>`;
-            return;
-        }
+//         if (!response.ok) {
+//             const errorText = await response.text();
+//             console.error("Processing failed:", errorText);
+//             fileDetails.innerHTML += `<br><span style="color: red;">Processing failed: ${response.status} - ${errorText}</span>`;
+//             return;
+//         }
 
-        const result = await response.json();
-        fileDetails.innerHTML += `<br><strong style="color: green;">✅ Processing complete:</strong><br>${result.message}`;
-    } catch (err) {
-        console.error("Processing error:", err);
-        fileDetails.innerHTML += '<br><span style="color: red;">Error processing file! Check console for details.</span>';
-    }
-}
+//         const result = await response.json();
+//         fileDetails.innerHTML += `<br><strong style="color: green;">✅ Processing complete:</strong><br>${result.message}`;
+//     } catch (err) {
+//         console.error("Processing error:", err);
+//         fileDetails.innerHTML += '<br><span style="color: red;">Error processing file! Check console for details.</span>';
+//     }
+// }
 
 
-document.addEventListener('DOMContentLoaded', function () {
-    checkAuthentication();
+// document.addEventListener('DOMContentLoaded', function () {
+//     checkAuthentication();
 
-    const fileInput = document.getElementById('fileUpload');
-    const callBtn = document.querySelector('.callBtn');
+//     const fileInput = document.getElementById('fileUpload');
+//     const callBtn = document.querySelector('.callBtn');
 
-    // Handle file selection + upload
-    fileInput.addEventListener('change', uploadFile);
+//     // Handle file selection + upload
+//     fileInput.addEventListener('change', uploadFile);
 
-    // Handle processing click
-    callBtn.addEventListener('click', async function () {
-        const fileDetails = document.getElementById("fileDetails");
-        console.log("Start Call Processing clicked");
+//     // Handle processing click
+//     callBtn.addEventListener('click', async function () {
+//         const fileDetails = document.getElementById("fileDetails");
+//         console.log("Start Call Processing clicked");
 
-        try {
-            fileDetails.innerHTML += '<br><span style="color: blue;">Processing file...</span>';
+//         try {
+//             fileDetails.innerHTML += '<br><span style="color: blue;">Processing file...</span>';
 
-            const response = await fetch("/add-call", {
-                method: "POST",
-                credentials: 'include'
-            });
+//             const response = await fetch("/add-call", {
+//                 method: "POST",
+//                 credentials: 'include'
+//             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Processing failed:", errorText);
-                fileDetails.innerHTML += `<br><span style="color: red;">Processing failed: ${response.status} - ${errorText}</span>`;
-                return;
-            }
+//             if (!response.ok) {
+//                 const errorText = await response.text();
+//                 console.error("Processing failed:", errorText);
+//                 fileDetails.innerHTML += `<br><span style="color: red;">Processing failed: ${response.status} - ${errorText}</span>`;
+//                 return;
+//             }
 
-            const result = await response.json();
-            fileDetails.innerHTML += `<br><strong style="color: green;">✅ Processing complete:</strong><br>${result.message}`;
-        } catch (err) {
-            console.error("Processing error:", err);
-            fileDetails.innerHTML += '<br><span style="color: red;">Error processing file! Check console for details.</span>';
-        }
-    });
-});
+//             const result = await response.json();
+//             fileDetails.innerHTML += `<br><strong style="color: green;">✅ Processing complete:</strong><br>${result.message}`;
+//         } catch (err) {
+//             console.error("Processing error:", err);
+//             fileDetails.innerHTML += '<br><span style="color: red;">Error processing file! Check console for details.</span>';
+//         }
+//     });
+// });

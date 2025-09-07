@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <title>Upload File Page</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"/>
-  <link rel="stylesheet" href="/static/Style.css">
+  <link rel="stylesheet" href="static\Style.css">
+  <script src="/static/upload.js"></script>
+
 </head>
 <body>
     <div class="rs_sdr_pagewrapper">
@@ -12,7 +14,7 @@
             <div class="rs_callqueue_conn">
                 <div class="rs-callqueue-header">
                     <span><i class="fa-solid fa-phone"></i></span>
-                    <h2>AI SDR Excel </h2>
+                    <h2>Call Queue Excel Processor</h2>
                     <div class="logout-wrap">
                         <button class="btn rs-btn" onclick="logout()"><i class="fas fa-sign-out"></i></button>
                     </div>
@@ -20,22 +22,61 @@
                 <div class="file-upload-wrapper">
                     <h3>Upload Your Excel File</h3>
                     <label class="custom-file-upload">
-                        <input type="file" id="fileUpload" />
+                        <input type="file" id="fileUpload" onchange="uploadFile()"/>
                         Choose Excel File
                      </label>
                     <div class="uploaded-files" id="uploadedFiles"></div>
-                    <div id="fileDetails"></div>
                 </div>
                 <div class="call-result-wrap">
                     <button class="rs-btn callBtn" disabled>Start Call Processing</button>
-                    <button class="rs-btn download-sheet" onclick="downloadAll()">Download Result Sheet</button>
+                    <button class="rs-btn download-sheet"  onclick="downloadAll()">Download Result Sheet</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts should go here -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="/static/upload.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    let $callBtn = $('.callBtn');
+
+    $('#fileUpload').on('change', function() {
+        let file = this.files[0];
+        if (file) {
+            let fileDiv = $(`
+                <div class="uploaded-file">
+                    <span>${file.name}</span>
+                    <span class="remove-file">&times;</span>
+                </div>
+            `);
+
+            $('#uploadedFiles').html(fileDiv);
+            $callBtn.prop('disabled', false);
+
+            fileDiv.find('.remove-file').on('click', function() {
+                fileDiv.remove();
+                $('#fileUpload').val('');
+                $callBtn.prop('disabled', true);
+            });
+        }
+    });
+});
+
+$callBtn.on('click', function() {
+    if (!$callBtn.prop('disabled')) {
+        fetch("/add-call", { 
+            method: "POST"
+        })
+        .then(() => {
+            $callBtn.prop('disabled', true); 
+        })
+        .catch(() => {
+            $callBtn.prop('disabled', true); 
+        });
+    }
+});
+</script>
+
 </body>
 </html>
