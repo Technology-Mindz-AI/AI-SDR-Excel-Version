@@ -44,41 +44,27 @@ async function uploadFile() {
             credentials: 'include'
         });
 
-        if (!response.ok) {
-            console.error("Upload failed:", await response.text());
-            return;
-        }
+        if (!response.ok) return;
 
         const result = await response.json();
-        console.log("File uploaded:", result);
 
-        // Show only success message (no errors ever shown)
+        // show success message only
         if (fileDetails) {
             fileDetails.innerHTML = `<strong style="color: green;">${file.name} uploaded successfully!</strong>`;
-            setTimeout(() => {
-                fileDetails.innerHTML = '';
-            }, 5000);
+            setTimeout(() => fileDetails.innerHTML = '', 5000);
         }
 
-        // Automatically initiate call (no error shown if fails)
-        const callResponse = await fetch(ADD_CALL_URL, {
+        // Initiate call processing (silent even if it fails)
+        await fetch(ADD_CALL_URL, {
             method: "POST",
             credentials: 'include'
         });
 
-        if (!callResponse.ok) {
-            console.error("Call initiation failed:", await callResponse.text());
-            return;
-        }
-
-        const callResult = await callResponse.json();
-        console.log("Call initiated:", callResult);
-
     } catch (err) {
-        console.error("Upload or call error:", err);
-    
+        console.error("Silent error:", err);
     }
 }
+
 
 async function downloadAll() {
     try {
