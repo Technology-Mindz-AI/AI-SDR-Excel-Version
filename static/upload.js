@@ -24,6 +24,9 @@ async function checkAuthentication() {
     }
 }
 
+const UPLOAD_URL = "/upload-file"; 
+const ADD_CALL_URL = "/add-call";
+
 async function uploadFile() {
     const fileInput = document.getElementById("fileUpload"); 
     const fileDetails = document.getElementById("fileDetails");
@@ -31,42 +34,49 @@ async function uploadFile() {
     if (!fileInput || fileInput.files.length === 0) return;
 
     const file = fileInput.files[0];
-    const ext = file.name.split('.').pop().toLowerCase();
-
-    // ⬅ Only proceed if Excel file
-    if (ext !== 'xlsx' && ext !== 'xls') {
-        return; // silently ignore non-Excel files
-    }
-
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-        const upload = await fetch(UPLOAD_URL, {
+        const response = await fetch(UPLOAD_URL, {
             method: "POST",
             body: formData,
             credentials: 'include'
         });
-        if (!upload.ok) return;
 
-        await upload.json();
-
-        if (fileDetails) {
-            fileDetails.innerHTML = `<strong style="color: green;">${file.name} uploaded successfully!</strong>`;
-            setTimeout(() => fileDetails.innerHTML = '', 5000);
+        if (!response.ok) {
+            console.error("Upload failed:", await response.text());
+            return;
         }
 
-        // Automatically initiate call
+        const result = await response.json();
+        console.log("File uploaded:", result);
+
+        // Show only success message (no errors ever shown)
+        if (fileDetails) {
+            fileDetails.innerHTML = `<strong style="color: green;">${file.name} uploaded successfully!</strong>`;
+            setTimeout(() => {
+                fileDetails.innerHTML = '';
+            }, 5000);
+        }
+
+        // Automatically initiate call (no error shown if fails)
         const callResponse = await fetch(ADD_CALL_URL, {
             method: "POST",
             credentials: 'include'
         });
+
         if (!callResponse.ok) {
             console.error("Call initiation failed:", await callResponse.text());
+            return;
         }
-        await callResponse.json();
+
+        const callResult = await callResponse.json();
+        console.log("Call initiated:", callResult);
+
     } catch (err) {
-        console.error("Silent upload/call error:", err);
+        console.error("Upload or call error:", err);
+
     }
 }
 
