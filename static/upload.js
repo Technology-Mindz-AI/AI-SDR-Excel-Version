@@ -33,10 +33,7 @@ async function uploadFile() {
     let fileDetails = document.getElementById("fileDetails");
 
     if (!fileInput || fileInput.files.length === 0) {
-        if (fileDetails) {
-            fileDetails.innerHTML = '<span style="color: red;">Please select a file first!</span>';
-        }
-        return;
+        return; // No UI message needed
     }
 
     const file = fileInput.files[0];
@@ -44,9 +41,6 @@ async function uploadFile() {
     formData.append("file", file);
 
     try {
-        if (fileDetails) {
-            fileDetails.innerHTML = `<span style="color: blue;">Uploading <strong>${file.name}</strong>...</span>`;
-        }
 
         const response = await fetch(UPLOAD_URL, {
             method: "POST",
@@ -55,11 +49,7 @@ async function uploadFile() {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Backend error:", errorText);
-            if (fileDetails) {
-                fileDetails.innerHTML = `<span style="color: red;">Upload failed: ${response.status} - ${errorText}</span>`;
-            }
+            console.error("Backend error:", await response.text());
             return;
         }
 
@@ -72,18 +62,14 @@ async function uploadFile() {
             }, 5000);
         }
 
-        // Now initiate call processing
+        // Initiate call processing
         const callResponse = await fetch(ADD_CALL_URL, {
             method: "POST",
             credentials: 'include'
         });
 
         if (!callResponse.ok) {
-            const errorText = await callResponse.text();
-            console.error("Call initiation failed:", errorText);
-            if (fileDetails) {
-                fileDetails.innerHTML = `<span style="color: red;">Call processing failed: ${callResponse.status}</span>`;
-            }
+            console.error("Call initiation failed:", await callResponse.text());
             return;
         }
 
@@ -92,12 +78,9 @@ async function uploadFile() {
 
     } catch (err) {
         console.error("Upload or call error:", err);
-        if (fileDetails) {
-            fileDetails.innerHTML = '<span style="color: red;">Something went wrong. Check console for details.</span>';
-        }
+        // No UI error shown
     }
 }
-
 
 async function downloadAll() {
     try {
