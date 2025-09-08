@@ -24,9 +24,6 @@ async function checkAuthentication() {
     }
 }
 
-const UPLOAD_URL = "/upload-file"; 
-const ADD_CALL_URL = "/add-call";
-
 async function uploadFile() {
     const fileInput = document.getElementById("fileUpload"); 
     const fileDetails = document.getElementById("fileDetails");
@@ -34,34 +31,42 @@ async function uploadFile() {
     if (!fileInput || fileInput.files.length === 0) return;
 
     const file = fileInput.files[0];
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    // ⬅ Only proceed if Excel file
+    if (ext !== 'xlsx' && ext !== 'xls') {
+        return; // silently ignore non-Excel files
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-        const response = await fetch(UPLOAD_URL, {
+        const upload = await fetch(UPLOAD_URL, {
             method: "POST",
             body: formData,
             credentials: 'include'
         });
+        if (!upload.ok) return;
 
-        if (!response.ok) return;
+        await upload.json();
 
-        const result = await response.json();
-
-        // show success message only
         if (fileDetails) {
             fileDetails.innerHTML = `<strong style="color: green;">${file.name} uploaded successfully!</strong>`;
             setTimeout(() => fileDetails.innerHTML = '', 5000);
         }
 
-        // Initiate call processing (silent even if it fails)
-        await fetch(ADD_CALL_URL, {
+        // Automatically initiate call
+        const callResponse = await fetch(ADD_CALL_URL, {
             method: "POST",
             credentials: 'include'
         });
-
+        if (!callResponse.ok) {
+            console.error("Call initiation failed:", await callResponse.text());
+        }
+        await callResponse.json();
     } catch (err) {
-        console.error("Silent error:", err);
+        console.error("Silent upload/call error:", err);
     }
 }
 
