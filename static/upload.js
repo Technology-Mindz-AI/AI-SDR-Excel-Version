@@ -26,6 +26,7 @@ async function checkAuthentication() {
 
 const UPLOAD_URL = "/upload-file"; 
 const ADD_CALL_URL = "/add-call";
+const DOWNLOAD_URL = "/download-excel";
 
 async function uploadFile() {
     const fileInput = document.getElementById("fileUpload"); 
@@ -34,6 +35,13 @@ async function uploadFile() {
     if (!fileInput || fileInput.files.length === 0) return;
 
     const file = fileInput.files[0];
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    // Only allow Excel files
+    if (ext !== 'xlsx' && ext !== 'xls') {
+        return; // Silently ignore non-Excel files
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -44,39 +52,27 @@ async function uploadFile() {
             credentials: 'include'
         });
 
-        if (!response.ok) {
-            console.error("Upload failed:", await response.text());
-            return;
-        }
+        if (!response.ok) return;
 
-        const result = await response.json();
-        console.log("File uploaded:", result);
+        await response.json();
 
-        // Show only success message (no errors ever shown)
         if (fileDetails) {
             fileDetails.innerHTML = `<strong style="color: green;">${file.name} uploaded successfully!</strong>`;
-            setTimeout(() => {
-                fileDetails.innerHTML = '';
-            }, 5000);
+            setTimeout(() => fileDetails.innerHTML = '', 5000);
         }
 
-        // Automatically initiate call (no error shown if fails)
+        // Automatically initiate call
         const callResponse = await fetch(ADD_CALL_URL, {
             method: "POST",
             credentials: 'include'
         });
 
-        if (!callResponse.ok) {
-            console.error("Call initiation failed:", await callResponse.text());
-            return;
-        }
+        if (!callResponse.ok) return;
 
-        const callResult = await callResponse.json();
-        console.log("Call initiated:", callResult);
-
+        await callResponse.json();
+        
     } catch (err) {
-        console.error("Upload or call error:", err);
-
+        // Completely silent on error
     }
 }
 
@@ -121,6 +117,7 @@ async function downloadAll() {
         alert("Error downloading file! Check console for details.");
     }
 }
+
 
 
 async function logout() {
