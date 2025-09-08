@@ -26,22 +26,18 @@ async function checkAuthentication() {
 
 const UPLOAD_URL = "/upload-file"; 
 const ADD_CALL_URL = "/add-call";
-const DOWNLOAD_URL = "/download-excel";
 
 async function uploadFile() {
-    let fileInput = document.getElementById("fileUpload"); 
-    let fileDetails = document.getElementById("fileDetails");
+    const fileInput = document.getElementById("fileUpload"); 
+    const fileDetails = document.getElementById("fileDetails");
 
-    if (!fileInput || fileInput.files.length === 0) {
-        return; // No UI message needed
-    }
+    if (!fileInput || fileInput.files.length === 0) return;
 
     const file = fileInput.files[0];
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-
         const response = await fetch(UPLOAD_URL, {
             method: "POST",
             body: formData,
@@ -49,20 +45,22 @@ async function uploadFile() {
         });
 
         if (!response.ok) {
-            console.error("Backend error:", await response.text());
+            console.error("Upload failed:", await response.text());
             return;
         }
 
         const result = await response.json();
+        console.log("File uploaded:", result);
 
+        // Show only success message (no errors ever shown)
         if (fileDetails) {
-            fileDetails.innerHTML = `<strong style="color: green;"> ${file.name} uploaded successfully!</strong>`;
+            fileDetails.innerHTML = `<strong style="color: green;">${file.name} uploaded successfully!</strong>`;
             setTimeout(() => {
                 fileDetails.innerHTML = '';
             }, 5000);
         }
 
-        // Initiate call processing
+        // Automatically initiate call (no error shown if fails)
         const callResponse = await fetch(ADD_CALL_URL, {
             method: "POST",
             credentials: 'include'
@@ -74,11 +72,11 @@ async function uploadFile() {
         }
 
         const callResult = await callResponse.json();
-        console.log("Call processing started:", callResult);
+        console.log("Call initiated:", callResult);
 
     } catch (err) {
         console.error("Upload or call error:", err);
-        // No UI error shown
+    
     }
 }
 
