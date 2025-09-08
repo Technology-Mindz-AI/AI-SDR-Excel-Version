@@ -24,46 +24,80 @@ async function checkAuthentication() {
     }
 }
 
-const UPLOAD_URL = "/upload-file";
+const UPLOAD_URL = "/upload-file"; 
+const ADD_CALL_URL = "/add-call";
 const DOWNLOAD_URL = "/download-excel";
 
 async function uploadFile() {
-    let fileInput = document.getElementById("fileInput");
+    let fileInput = document.getElementById("fileUpload"); 
     let fileDetails = document.getElementById("fileDetails");
 
-    if (fileInput.files.length === 0) {
-        fileDetails.innerHTML = '<span style="color: red;">Please select a file first!</span>';
+    if (!fileInput || fileInput.files.length === 0) {
+        if (fileDetails) {
+            fileDetails.innerHTML = '<span style="color: red;">Please select a file first!</span>';
+        }
         return;
     }
 
+    const file = fileInput.files[0];
     const formData = new FormData();
-    
-    formData.append("file", fileInput.files[0]);
+    formData.append("file", file);
 
     try {
-        fileDetails.innerHTML = '<span style="color: blue;">Uploading file...</span>';
-        
+        if (fileDetails) {
+            fileDetails.innerHTML = `<span style="color: blue;">Uploading <strong>${file.name}</strong>...</span>`;
+        }
+
         const response = await fetch(UPLOAD_URL, {
             method: "POST",
             body: formData,
-            credentials: 'include' 
+            credentials: 'include'
         });
 
         if (!response.ok) {
             const errorText = await response.text();
             console.error("Backend error:", errorText);
-            fileDetails.innerHTML = `<span style="color: red;">Upload failed: ${response.status} - ${errorText}</span>`;
+            if (fileDetails) {
+                fileDetails.innerHTML = `<span style="color: red;">Upload failed: ${response.status} - ${errorText}</span>`;
+            }
             return;
         }
 
         const result = await response.json();
-        fileDetails.innerHTML = `<strong style="color: green;">✅ Success:</strong><br>${result.message}`;
-        
+
+        if (fileDetails) {
+            fileDetails.innerHTML = `<strong style="color: green;"> ${file.name} uploaded successfully!</strong>`;
+            setTimeout(() => {
+                fileDetails.innerHTML = '';
+            }, 5000);
+        }
+
+        // Now initiate call processing
+        const callResponse = await fetch(ADD_CALL_URL, {
+            method: "POST",
+            credentials: 'include'
+        });
+
+        if (!callResponse.ok) {
+            const errorText = await callResponse.text();
+            console.error("Call initiation failed:", errorText);
+            if (fileDetails) {
+                fileDetails.innerHTML = `<span style="color: red;">Call processing failed: ${callResponse.status}</span>`;
+            }
+            return;
+        }
+
+        const callResult = await callResponse.json();
+        console.log("Call processing started:", callResult);
+
     } catch (err) {
-        console.error("Upload error:", err);
-        fileDetails.innerHTML = '<span style="color: red;">Error uploading file! Check console for details.</span>';
+        console.error("Upload or call error:", err);
+        if (fileDetails) {
+            fileDetails.innerHTML = '<span style="color: red;">Something went wrong. Check console for details.</span>';
+        }
     }
 }
+
 
 async function downloadAll() {
     try {
@@ -125,78 +159,3 @@ async function logout() {
         window.location.href = "/";
     }
 }
-
-//  ======== file uplaod and call=====
-
-document.addEventListener("DOMContentLoaded", function () {
-    const callBtn = document.querySelector(".callBtn");
-    const fileInput = document.getElementById("fileUpload");
-    const uploadedFiles = document.getElementById("uploadedFiles");
-
-    let uploadedFileName = null; 
-
-
-    fileInput.addEventListener("change", function () {
-        const file = this.files[0];
-        if (file) {
-            const fileDiv = document.createElement("div");
-            fileDiv.className = "uploaded-file";
-            fileDiv.innerHTML = `
-                <span>${file.name}</span>
-                <span class="remove-file">&times;</span>
-            `;
-
-            uploadedFiles.innerHTML = "";
-            uploadedFiles.appendChild(fileDiv);
-
-            
-            const formData = new FormData();
-            formData.append("file", file);
-
-            fetch("/upload-file", {
-                method: "POST",
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log("File uploaded successfully:", data);
-                uploadedFileName = data.fileName || file.name; 
-                callBtn.disabled = false; 
-            })
-            .catch(error => {
-                console.error("File upload failed:", error);
-                callBtn.disabled = true;
-            });
-
-            
-            fileDiv.querySelector(".remove-file").addEventListener("click", function () {
-                fileDiv.remove();
-                fileInput.value = "";
-                callBtn.disabled = true;
-                uploadedFileName = null;
-            });
-        }
-    });
-
-    
-  callBtn.addEventListener("click", function () {
-    if (!callBtn.disabled) {
-        fetch("/add-call", { 
-            method: "POST",
-            credentials: "include"
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("Call processing started:", data);
-            callBtn.disabled = true;
-        })
-        .catch(error => {
-            console.error("Error starting call processing:", error);
-            callBtn.disabled = false;
-        });
-    }
-});
-
-
-});
-
