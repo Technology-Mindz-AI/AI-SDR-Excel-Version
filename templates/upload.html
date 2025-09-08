@@ -22,19 +22,20 @@
                 <div class="file-upload-wrapper">
                     <h3>Upload Your Excel File</h3>
                     <label class="custom-file-upload">
-                        <input type="file" id="fileUpload"/>
+                        <input type="file" id="fileUpload" onchange="uploadFile()"/>
                         Choose Excel File
                      </label>
-                    <div class="uploaded-files" id="uploadedFiles"></div>
+                    <!-- <div class="uploaded-files" id="uploadedFiles"></div> -->
+                     <div id="fileDetails"></div>
                 </div>
                 <div class="call-result-wrap">
-                    <button class="rs-btn callBtn" disabled>Start Call Processing</button>
+                    <!-- <button class="rs-btn callBtn" disabled>Start Call Processing</button> -->
                     <button class="rs-btn download-sheet"  onclick="downloadAll()">Download Result Sheet</button>
                 </div>
             </div>
         </div>
     </div>
-
+    
 
 </body>
 </html>
