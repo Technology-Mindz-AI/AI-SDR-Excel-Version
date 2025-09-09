@@ -14,6 +14,7 @@ from logger_config import logger
 import pandas as pd
 import io
 import math
+from pydantic import BaseModel
 import os
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
@@ -43,7 +44,7 @@ from notes_and_tasks import (
 
 app = FastAPI(title="Call Queue")
 
-security = HTTPBasic()
+
 active_sessions = {}
 
 VALID_CREDENTIALS = {
@@ -70,6 +71,11 @@ call_id_to_sid_lock = threading.Lock()
 init_db(logger=logger)  # Initialize the database at startup
 
 TERMINAL_STATUSES = {"completed", "busy", "failed", "no-answer", "cancelled"}
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 # --- Phone Number Formatting and Validation ---
 # def format_and_validate_number(raw_number, country=None):
@@ -109,14 +115,13 @@ def create_session_token():
     return secrets.token_urlsafe(32)
 
 def get_current_user(session_token: Optional[str] = Cookie(None)):
-    """Get current user from session token"""
     if not session_token or session_token not in active_sessions:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Basic"},
+            detail="Not authenticated"
         )
     return active_sessions[session_token]
+
 
 def validate_email(email: str) -> bool:
     """Validate email format"""
@@ -386,45 +391,37 @@ async def root(request: Request):
     )
 
 @app.post("/login")
-async def login(credentials: HTTPBasicCredentials = Depends(security)):
-    """Login endpoint that validates email format"""
-    if not validate_email(credentials.username):
+async def login(data: LoginRequest):
+    """Login endpoint that validates email format and sets cookie"""
+    if not verify_credentials(data.email, data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email format. Please use a valid email address.",
-            headers={"WWW-Authenticate": "Basic"},
+            detail="Invalid email or password"
         )
-    
-    if not verify_credentials(credentials.username, credentials.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    
-    # Rest of your existing login code remains the same...
+
     session_token = create_session_token()
-    active_sessions[session_token] = credentials.username
-    
+    active_sessions[session_token] = data.email
+
     response = JSONResponse(content={"message": "Login successful"})
     response.set_cookie(
         key="session_token",
         value=session_token,
         httponly=True,
-        max_age=3600,
+        secure=True,
+        max_age=60*60*24*30,    # 30 days
         samesite="lax"
     )
     return response
 
 @app.post("/logout")
 async def logout(session_token: Optional[str] = Cookie(None)):
-    """Logout endpoint that clears session"""
     if session_token and session_token in active_sessions:
         del active_sessions[session_token]
-    
+
     response = JSONResponse(content={"message": "Logout successful"})
     response.delete_cookie(key="session_token")
     return response
+
 
 @app.get("/upload", response_class=HTMLResponse)
 async def upload_page(request: Request, username: str = Depends(get_current_user)):
@@ -433,6 +430,15 @@ async def upload_page(request: Request, username: str = Depends(get_current_user
 
 @app.post("/upload-file")
 async def upload_file(file: UploadFile = File(...), username: str = Depends(get_current_user)):
+    logger.info(f"[upload_file API] User {username} uploading file: {file.filename}\n\n")
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM customer_data")
+    logger.info("Deleted previous customer data.")
+    # c.execute("DELETE FROM call_queue")
+    # logger.info("Cleared previous call queue.")
+    conn.commit()
+    conn.close()
     TEMP_FILE_PATH = "temp_upload.xlsx"
     try:
         with open(TEMP_FILE_PATH, "wb") as buffer:
@@ -508,7 +514,8 @@ async def add_call(username: str = Depends(get_current_user)):
         # Clear customer_data table before adding new batch
         c.execute("DELETE FROM customer_data")
         logger.info(f"Deleted previous customer data.")
-
+        # c.execute("DELETE FROM call_queue")
+        # logger.info(f"Cleared previous call queue.")
         added_count = 0
         for _, row in df.iterrows():
             customer_name_raw = row.get('customer_name', '')

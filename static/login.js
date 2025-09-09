@@ -15,27 +15,40 @@ function login() {
     return;
   }
 
-  const authHeader = 'Basic ' + btoa(user + ':' + pass);
-  
+  // Use the actual input values instead of hardcoded ones
+  const email = user;
+  const password = pass;
+
   fetch('/login', {
     method: 'POST',
     headers: {
-      'Authorization': authHeader,
       'Content-Type': 'application/json'
     },
-    credentials: 'include'
+    credentials: 'include', // ensures cookies are stored
+    body: JSON.stringify({ email, password })
   })
   .then(response => {
-    if (response.ok) {
-      window.location.href = "/upload";
-    } else if (response.status === 401) {
-      error.textContent = "Invalid email or password.";
-    } else {
-      error.textContent = "Login failed. Please try again.";
+    if (!response.ok) {
+      return response.json().then(err => {
+        // get the backend error message if available
+        throw new Error(err.detail || "Login failed");
+      });
     }
+    return response.json();
   })
-  .catch(err => {
-    console.error('Login error:', err);
-    error.textContent = "Login failed. Please try again.";
+  .then(data => {
+    console.log(data); // { "message": "Login successful" }
+    // Instead of alert, redirect to upload page on success
+    window.location.href = "/upload";
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    error.textContent = "Login failed: " + error.message;
   });
 }
+
+// Add event listener to the login button
+document.getElementById("loginBtn").addEventListener("click", function(event) {
+  event.preventDefault(); // Prevent form submission if it's inside a form
+  login();
+});
