@@ -23,7 +23,11 @@ from fastapi import Depends, HTTPException, Cookie, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import secrets
 from typing import Optional 
-from fastapi.responses import JSONResponse       
+from fastapi.responses import JSONResponse
+from appwrite.client import Client
+from appwrite.services.databases import Databases
+from appwrite.query import Query
+from appwrite.exception import AppwriteException       
 from helperfuncs import (
     CallRequest,
     QueueUpdateRequest,
@@ -47,12 +51,21 @@ app = FastAPI(title="Call Queue")
 
 active_sessions = {}
 
-VALID_CREDENTIALS = {
-    "admin@gmail.com": "admin123",
-    "user@gmail.com": "user123", 
-    "agent@gmail.com": "agent123",
-    "manager@gmail.com": "manager123"
-}
+account_sid = getattr(settings, "TWILIO_ACCOUNT_SID", None)
+
+APPWRITE_ENDPOINT = getattr(settings, "APPWRITE_ENDPOINT", None)
+APPWRITE_PROJECT_ID = getattr(settings, "APPWRITE_PROJECT_ID", None)
+APPWRITE_API_KEY = getattr(settings, "APPWRITE_API_KEY", None)
+APPWRITE_DATABASE_ID = getattr(settings, "APPWRITE_DATABASE_ID", None)
+APPWRITE_COLLECTION_ID = getattr(settings, "APPWRITE_COLLECTION_ID", None)
+
+# APPWRITE CLIENT INITIALIZATION
+appwrite_client = Client()
+appwrite_client.set_endpoint(APPWRITE_ENDPOINT)
+appwrite_client.set_project(APPWRITE_PROJECT_ID)
+appwrite_client.set_key(APPWRITE_API_KEY)
+
+databases = Databases(appwrite_client)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -72,6 +85,7 @@ init_db(logger=logger)  # Initialize the database at startup
 
 TERMINAL_STATUSES = {"completed", "busy", "failed", "no-answer", "cancelled"}
 
+PROMPT_FILE = "prompts.txt"
 
 class LoginRequest(BaseModel):
     email: str
@@ -104,23 +118,60 @@ class LoginRequest(BaseModel):
     # logger.info(f"[format_and_validate_number] Prepending country code. Final number: '{final_number}'\n\n")
     # return final_number
 
-def verify_credentials(email: str, password: str):
-    """Verify if credentials are valid and email is properly formatted"""
-    if not validate_email(email):
+class PromptRequest(BaseModel):
+    prompt: str
+
+async def verify_credentials(email: str, password: str) -> bool:
+    """Verify credentials against Appwrite database"""
+    try:
+        if not validate_email(email):
+            return False
+            
+        # Query Appwrite database for user with matching email
+        result = databases.list_documents(
+            database_id=APPWRITE_DATABASE_ID,
+            collection_id=APPWRITE_COLLECTION_ID,
+            queries=[Query.equal("email", email)]
+        )
+        
+        if not result['documents']:
+            logger.info(f"[verify_credentials] No user found with email: {email}")
+            return False
+            
+        user = result['documents'][0]
+        stored_password = user['password']
+        
+        # Direct password comparison (consider using hashed passwords in production)
+        if stored_password == password:
+            logger.info(f"[verify_credentials] Authentication successful for: {email}")
+            return True
+        else:
+            logger.info(f"[verify_credentials] Authentication failed for: {email}")
+            return False
+            
+    except AppwriteException as e:
+        logger.error(f"[verify_credentials] Appwrite error: {e}")
         return False
-    return VALID_CREDENTIALS.get(email) == password
+    except Exception as e:
+        logger.error(f"[verify_credentials] Unexpected error: {e}")
+        return False
 
 def create_session_token():
     """Create a new session token"""
     return secrets.token_urlsafe(32)
 
-def get_current_user(session_token: Optional[str] = Cookie(None)):
-    if not session_token or session_token not in active_sessions:
+def get_current_user(
+    session_token: Optional[str] = Cookie(None),
+    session_token_query: Optional[str] = None  # Add this for Swagger
+):
+    # Use query parameter if cookie is not available
+    token = session_token or session_token_query
+    if not token or token not in active_sessions:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated"
         )
-    return active_sessions[session_token]
+    return active_sessions[token]
 
 
 def validate_email(email: str) -> bool:
@@ -170,7 +221,12 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
                         logger.info(f"removing {call_id} from queue after terminal status {status}\n\n")
                         pop_call_by_id(call_id)
                     threading.Thread(target=process_queue_single_run, daemon=True).start()
-                    return      
+                    return   
+            elif response.status_code == 404:
+                logger.error(f"[poll_twilio_status] Twilio callSid {call_sid} not found (404). Removing from queue.\n\n")
+                pop_call_by_id(call_id)
+                threading.Thread(target=process_queue_single_run, daemon=True).start()
+                return   
             else:
                 logger.warning(f"[poll_twilio_status] Twilio API error {response.status_code}: {response.text}\n\n")
 
@@ -261,6 +317,13 @@ def initiate_call(
         update_customer_data_notes_and_tasks(call_id=call_id, parsed=None, db_path="queue.db")
         return False
 
+def load_all_prompts() -> str:
+    """Reads all saved prompts from the prompt file and concatenates them."""
+    if not os.path.exists(PROMPT_FILE):
+        return ""
+    with open(PROMPT_FILE, "r", encoding="utf-8") as f:
+        return "\n".join([line.strip() for line in f if line.strip()])
+
 # --- Shared Queue Processing Function ---
 def process_queue_single_run():
     logger.info("[process_queue_single_run] Checking queue for next call.\n\n")
@@ -331,6 +394,15 @@ def process_queue_single_run():
         logger.info(f"[process_queue_single_run] Customer ID: {customer_id}\n\n")
         logger.info(f"[process_queue_single_run] Creating the details for dynamic variables using customer_requirements and notes")
 
+        prompts = load_all_prompts()
+
+# Build final LLM prompt (notes preferred, greeting fallback)
+        if notes:
+            llm_prompt = f"{prompts}\n\nCustomer Notes:\n{notes}"
+        else:
+            llm_prompt = f"{prompts}\n\nGreeting:\nHello, thank you for taking the time to speak with us."
+
+
         details = f"These are the details of the customer you are speaking with. Name: {customer_name}:\n\n"
         details += f"Customer Requirements: {customer_requirements}\n"
         details += f"Notes: {notes}\n"
@@ -339,6 +411,7 @@ def process_queue_single_run():
         details += f"Country Code: {country_code}\n"
         details += f"Industry: {industry}\n"
         details += f"Location: {location}\n"
+        details += f"LLM Prompt:\n{llm_prompt}\n"
 
         logger.info(f"[process_queue_single_run] Details for call: {details}\n\n")
         # Normalize phone number
@@ -393,7 +466,7 @@ async def root(request: Request):
 @app.post("/login")
 async def login(data: LoginRequest):
     """Login endpoint that validates email format and sets cookie"""
-    if not verify_credentials(data.email, data.password):
+    if not await verify_credentials(data.email, data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
@@ -427,6 +500,22 @@ async def logout(session_token: Optional[str] = Cookie(None)):
 async def upload_page(request: Request, username: str = Depends(get_current_user)):
     logger.info(f"[upload_page API] User {username} accessing upload page\n\n")
     return templates.TemplateResponse("upload.html", {"request": request})
+
+@app.post("/submit-prompt")
+async def submit_prompt(
+    payload: PromptRequest, 
+    user: str = Depends(get_current_user)
+):
+    prompt_text = payload.prompt
+
+    if not prompt_text:
+        raise HTTPException(status_code=400, detail="Prompt text is required")
+
+    # Append new prompt (don't overwrite existing)
+    with open(PROMPT_FILE, "a", encoding="utf-8") as f:
+        f.write(prompt_text.strip() + "\n")
+
+    return {"status": "success", "message": "Prompt saved successfully"}
 
 @app.post("/upload-file")
 async def upload_file(file: UploadFile = File(...), username: str = Depends(get_current_user)):

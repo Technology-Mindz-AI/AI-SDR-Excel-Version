@@ -1,90 +1,90 @@
 body {
-  font-family: Arial, sans-serif;
-  background: #f8f9fa;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
+font-family: Arial, sans-serif;
+background: #f8f9fa;
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100vh;
+margin: 0;
 }
- 
+
 .login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
+display: flex;
+justify-content: center;
+align-items: center;
+width: 100%;
 }
 
 .login-box {
-  background: #fff;
-  padding: 30px 25px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  width: 320px;
+background: #fff;
+padding: 30px 25px;
+border-radius: 8px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+width: 320px;
 }
 
 h2 {
-  text-align: center;
-  margin-bottom: 20px;
-  font-weight: bold;
+text-align: center;
+margin-bottom: 20px;
+font-weight: bold;
 }
 
 label {
-  display: block;
-  font-size: 14px;
-  margin: 10px 0 5px;
-  color: #333;
+display: block;
+font-size: 14px;
+margin: 10px 0 5px;
+color: #333;
 }
 
 input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  margin-bottom: 10px;
-  font-size: 14px;
-  padding-left: 3px;
+width: 100%;
+padding: 10px;
+border: 1px solid #ccc;
+border-radius: 6px;
+margin-bottom: 10px;
+font-size: 14px;
+padding-left: 3px;
 }
 
 button {
-  width: 100%;
-  padding: 10px;
-  background: #007bff;
-  border: none;
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 10px;
+width: 100%;
+padding: 10px;
+background: #007bff;
+border: none;
+color: white;
+font-size: 16px;
+font-weight: bold;
+border-radius: 6px;
+cursor: pointer;
+margin-top: 10px;
 }
 
 button:hover {
-  background: #0069d9;
+background: #0069d9;
 }
 
 .error {
-  text-align: center;
-  color: red;
-  margin-top: 10px;
-  font-size: 14px;
+text-align: center;
+color: red;
+margin-top: 10px;
+font-size: 14px;
 }
 
 
 #fileDetails {
-  margin-top: 15px;
-  font-size: 14px;
-  color: #333;
-  text-align: left;
+margin-top: 15px;
+font-size: 14px;
+color: #333;
+text-align: left;
 }
 
 .logout-btn {
-  margin-top: 15px;
-  background: #dc3545;
+margin-top: 15px;
+background: #dc3545;
 }
 
 .logout-btn:hover {
-  background: #c82333;
+background: #c82333;
 }
 
 
@@ -109,9 +109,9 @@ button:hover {
     background: #fff;
     padding: 50px;
     border-radius: 20px;
-}   
+}
 .rs-callqueue-header {
-   text-align: center;
+text-align: center;
     padding: 20px;
     position: relative;
 }
@@ -128,9 +128,11 @@ button:hover {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border: 2px dashed #cecece;
+    border: 1px solid #cecece;
     border-radius: 20px;
     gap: 10px;
+    width: 50%;
+    padding: 10px;
 }
 .custom-file-upload {
         display: inline-block;
@@ -218,7 +220,7 @@ button:hover {
     min-height: 50px;
 }
 .logout-wrap .btn:hover {
-   background: transparent;
+background: transparent;
 }
 .rs-btn:focus-visible {
     outline: none !important;
@@ -233,4 +235,63 @@ button:hover {
     }
 .download-sheet {
     background: #45bee6;
+}
+
+
+
+.rs-prompt-wrapper {
+    border: 1px solid #cecece;
+    border-radius: 20px;
+    padding: 10px 10px;
+    width: 50%;
+    position: relative;
+    background: #f6f6f6;
+    display: block;
+    min-height: 100%;
+}
+.rs-field-wrap {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    min-height: 200px;
+}
+.prompt-inner-wrap {
+    height: 75%;
+    display: block;
+}
+#prompt {
+    height: 100%;
+    width: 100%;
+    border: none;
+    background: #f6f6f6;
+    font-size: 14px;
+}
+textarea#prompt:focus {
+    border: none;
+    outline: none;
+}
+.promptsendBtn {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: grey;
+    border-radius: 10px;
+}
+.input-head {
+    text-align: center;
+    margin: 5px 0 10px 0;
+    font-size: 16px;
+    color: #000;
+    font-weight: 600;
+}
+#charCount {
+    margin: 5px 0;
+    position: absolute;
+    top: 101%;
+    right: 5px;
+    z-index: 99999;
+    color: blue;
+    font-size: 14px;
 }

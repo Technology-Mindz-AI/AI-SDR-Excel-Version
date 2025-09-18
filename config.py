@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     TWILIO_AUTH_TOKEN: str
     TWILIO_ACCOUNT_SID: str
+    APPWRITE_ENDPOINT: str
+    APPWRITE_PROJECT_ID: str
+    APPWRITE_API_KEY: str
+    APPWRITE_DATABASE_ID: str
+    APPWRITE_COLLECTION_ID: str
 
     class Config:
         env_file = ".env"

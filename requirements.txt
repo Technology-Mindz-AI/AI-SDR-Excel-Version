@@ -14,3 +14,4 @@ dateparser
 python-dateutil
 openpyxl
 Jinja2
+appwrite
