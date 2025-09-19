@@ -46,7 +46,11 @@ from notes_and_tasks import (
     send_meeting_invite
 )
 
-app = FastAPI(title="Call Queue")
+app = FastAPI(title="Call Queue",
+    docs_url=None,       # disable /docs
+    redoc_url=None,      # disable /redoc
+    openapi_url=None     # disable /openapi.json
+)
 
 
 active_sessions = {}
