@@ -1,0 +1,6 @@
+__pycache__/
+queue.db
+app.log
+.env
+test.py 
+venv

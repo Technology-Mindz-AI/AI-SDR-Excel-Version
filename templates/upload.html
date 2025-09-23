@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Upload File Page</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"/>
+<link rel="stylesheet" href="static\Style.css">
+<script src="/static/upload.js"></script>
+</head>
+
+<style>
+    body {
+font-family: Arial, sans-serif;
+background: #f8f9fa;
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100vh;
+margin: 0;
+}
+
+.login-container {
+display: flex;
+justify-content: center;
+align-items: center;
+width: 100%;
+}
+
+.login-box {
+background: #fff;
+padding: 30px 25px;
+border-radius: 8px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+width: 320px;
+}
+
+h2 {
+text-align: center;
+margin-bottom: 20px;
+font-weight: bold;
+}
+
+label {
+display: block;
+font-size: 14px;
+margin: 10px 0 5px;
+color: #333;
+}
+
+input {
+width: 100%;
+padding: 10px;
+border: 1px solid #ccc;
+border-radius: 6px;
+margin-bottom: 10px;
+font-size: 14px;
+padding-left: 3px;
+}
+
+button {
+width: 100%;
+padding: 10px;
+background: #007bff;
+border: none;
+color: white;
+font-size: 16px;
+font-weight: bold;
+border-radius: 6px;
+cursor: pointer;
+margin-top: 10px;
+}
+
+button:hover {
+background: #0069d9;
+}
+
+.error {
+text-align: center;
+color: red;
+margin-top: 10px;
+font-size: 14px;
+}
+
+
+#fileDetails {
+margin-top: 15px;
+font-size: 14px;
+color: #333;
+text-align: left;
+}
+
+.logout-btn {
+margin-top: 15px;
+background: #dc3545;
+}
+
+.logout-btn:hover {
+background: #c82333;
+}
+
+
+/* ====rs ui css==== */
+
+    .rs_sdr_pagewrapper {
+    height: 100vh;
+    width: 100%;
+    background: #8888ff;
+    padding: 50px;
+    box-sizing: border-box;
+    display: flex;
+}
+.container {
+    max-width: 1200px;
+    width: 100%;
+    margin: auto;
+}
+.rs_callqueue_conn {
+    max-width: 70%;
+    margin: auto;
+    background: #fff;
+    padding: 50px;
+    border-radius: 20px;
+}
+.rs-callqueue-header {
+text-align: center;
+    padding: 20px;
+    position: relative;
+}
+.logout-wrap {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.file-upload-wrapper {
+    min-height: 200px;
+    background: #f6f6f6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #cecece;
+    border-radius: 20px;
+    gap: 10px;
+    width: 50%;
+    padding: 10px;
+}
+.custom-file-upload {
+        display: inline-block;
+        padding: 10px 20px;
+        cursor: pointer;
+        background-color: #6a6afb;
+        color: #fff;
+        border-radius: 5px;
+        font-weight: bold;
+        min-height: 25px;
+        min-width: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s;
+    }
+
+    .custom-file-upload:hover {
+        background-color: #0056b3;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    .uploaded-files {
+        margin-top: 10px;
+    }
+
+    .uploaded-file {
+        display: flex;
+    justify-content: space-between;
+    align-items: center;
+        gap: 20px;
+    background: #ffffff;
+    padding: 8px 20px;
+    border-radius: 0;
+    margin-bottom: 5px;
+    }
+
+    .uploaded-file span.remove-file {
+        cursor: pointer;
+        color: red;
+        font-weight: bold;
+    }
+    .rs-callqueue-header span .fa-phone {
+    font-size: 38px;
+    line-height: 48px;
+    color: #ec4292;
+}
+.logout-wrap .btn .fa-sign-out {
+    font-size: 25px;
+    cursor: pointer;
+    color: #000;
+}
+.call-result-wrap {
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+.rs-btn {
+    padding: 10px 20px;
+    cursor: pointer;
+    color: #fff;
+    border-radius: 10px;
+    font-weight: bold;
+    min-height: 25px;
+    min-width: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 26px;
+    border: none;
+        background: transparent;
+}
+.rs-signout {
+    width: fit-content;
+    padding: 0;
+}
+.logout-wrap .btn {
+    min-width: 50px;
+    min-height: 50px;
+}
+.logout-wrap .btn:hover {
+background: transparent;
+}
+.rs-btn:focus-visible {
+    outline: none !important;
+}
+.callBtn {
+    background: #45bee6;
+}
+    .callBtn:disabled {
+     background: grey;
+     cursor: not-allowed;
+     opacity: 0.6;
+    }
+.download-sheet {
+    background: #45bee6;
+}
+
+
+
+.rs-prompt-wrapper {
+    border: 1px solid #cecece;
+    border-radius: 20px;
+    padding: 10px 10px;
+    width: 50%;
+    position: relative;
+    background: #f6f6f6;
+    display: block;
+    min-height: 100%;
+}
+.rs-field-wrap {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    min-height: 200px;
+}
+.prompt-inner-wrap {
+    height: 75%;
+    display: block;
+}
+#prompt {
+    height: 100%;
+    width: 100%;
+    border: none;
+    background: #f6f6f6;
+    font-size: 14px;
+}
+textarea#prompt:focus {
+    border: none;
+    outline: none;
+}
+.promptsendBtn {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: grey;
+    border-radius: 10px;
+}
+.input-head {
+    text-align: center;
+    margin: 5px 0 10px 0;
+    font-size: 16px;
+    color: #000;
+    font-weight: 600;
+}
+#charCount {
+    margin: 5px 0;
+    position: absolute;
+    top: 101%;
+    right: 5px;
+    z-index: 99999;
+    color: blue;
+    font-size: 14px;
+}
+</style>
+<body>
+<div class="rs_sdr_pagewrapper">
+    <div class="container">
+        <div class="rs_callqueue_conn">
+            <div class="rs-callqueue-header">
+                <span><i class="fa-solid fa-phone"></i></span>
+                <h2>MILA - Excel</h2>
+                <div class="logout-wrap">
+                    <button class="btn rs-btn" onclick="logout()"><i class="fas fa-sign-out"></i></button>
+                </div>
+            </div>
+            <div class="rs-field-wrap">
+                <div class="rs-prompt-wrapper">
+                    <p class="input-head">Step 1</p>
+                    <div class="prompt-inner-wrap">                    
+                        <textarea id="prompt" placeholder="your prompt text here" oninput="updateCharacterCount(); toggleSendButton()"></textarea>
+                        <button id="sendBtn" onclick="submitPrompt()" class="promptsendBtn" disabled>
+                            <span class="submit-icon"><i class="fa-solid fa-arrow-right"></i></span>
+                        </button>                
+                    </div>
+                    <p id="charCount" class="char-count">(0/100)</p>
+                </div>
+                <div class="file-upload-wrapper">
+                    <p class="input-head">Step 2</p>
+                    <h3>Upload Your Excel File</h3>
+                    <label class="custom-file-upload">
+                        <input type="file" id="fileUpload" onchange="uploadFile()"/>
+                        Choose Excel File
+                    </label>
+                    <!-- <div class="uploaded-files" id="uploadedFiles"></div> -->
+                    <div id="fileDetails"></div>
+                </div>
+            </div>
+            <div class="call-result-wrap">
+                <button class="rs-btn download-sheet" onclick="downloadAll()">Download Result Sheet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const maxCharCount = 100;
+
+// Update character count
+function updateCharacterCount() {
+    const promptText = document.getElementById('prompt').value;
+    const charCount = promptText.length;
+    const charCountDisplay = document.getElementById('charCount');
+
+    // Update character count display
+    charCountDisplay.textContent = `(${charCount}/${maxCharCount})`;
+
+    if (charCount > maxCharCount) {
+        charCountDisplay.style.color = 'red';
+    } else {
+        charCountDisplay.style.color = 'blue';
+    }
+}
+
+// Toggle send button state
+function toggleSendButton() {
+    const promptText = document.getElementById('prompt').value;
+    const sendBtn = document.getElementById('sendBtn');
+
+    // Enable button and change color if text is entered
+    if (promptText.trim() !== "") {
+        sendBtn.disabled = false;
+        sendBtn.style.backgroundColor = "#6a6afb"; // Blue color when enabled
+    } else {
+        sendBtn.disabled = true;
+        sendBtn.style.backgroundColor = "#B0BEC5"; // Grey color when disabled
+    }
+}
+
+async function submitPrompt() {
+    const promptText = document.getElementById('prompt').value;
+    const url = '/submit-prompt'; // The API endpoint
+
+    console.log('submitPrompt triggered');
+
+    const data = {
+        prompt: promptText
+    };
+
+    try {
+        // Log the prompt being sent to the server
+        console.log('Sending prompt:', promptText);
+
+        // Send the data to the API using Fetch
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+        console.log('API Response:', result);
+
+        // Ensure that the textarea is cleared after submission
+        document.getElementById('prompt').value = '';
+        
+        updateCharacterCount();
+
+        toggleSendButton(); // This will disable the button and make it grey
+
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+</script>
+</body>
+</html>

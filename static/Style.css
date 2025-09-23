@@ -1,0 +1,297 @@
+body {
+font-family: Arial, sans-serif;
+background: #f8f9fa;
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100vh;
+margin: 0;
+}
+
+.login-container {
+display: flex;
+justify-content: center;
+align-items: center;
+width: 100%;
+}
+
+.login-box {
+background: #fff;
+padding: 30px 25px;
+border-radius: 8px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+width: 320px;
+}
+
+h2 {
+text-align: center;
+margin-bottom: 20px;
+font-weight: bold;
+}
+
+label {
+display: block;
+font-size: 14px;
+margin: 10px 0 5px;
+color: #333;
+}
+
+input {
+width: 100%;
+padding: 10px;
+border: 1px solid #ccc;
+border-radius: 6px;
+margin-bottom: 10px;
+font-size: 14px;
+padding-left: 3px;
+}
+
+button {
+width: 100%;
+padding: 10px;
+background: #007bff;
+border: none;
+color: white;
+font-size: 16px;
+font-weight: bold;
+border-radius: 6px;
+cursor: pointer;
+margin-top: 10px;
+}
+
+button:hover {
+background: #0069d9;
+}
+
+.error {
+text-align: center;
+color: red;
+margin-top: 10px;
+font-size: 14px;
+}
+
+
+#fileDetails {
+margin-top: 15px;
+font-size: 14px;
+color: #333;
+text-align: left;
+}
+
+.logout-btn {
+margin-top: 15px;
+background: #dc3545;
+}
+
+.logout-btn:hover {
+background: #c82333;
+}
+
+
+/* ====rs ui css==== */
+
+    .rs_sdr_pagewrapper {
+    height: 100vh;
+    width: 100%;
+    background: #8888ff;
+    padding: 50px;
+    box-sizing: border-box;
+    display: flex;
+}
+.container {
+    max-width: 1200px;
+    width: 100%;
+    margin: auto;
+}
+.rs_callqueue_conn {
+    max-width: 70%;
+    margin: auto;
+    background: #fff;
+    padding: 50px;
+    border-radius: 20px;
+}
+.rs-callqueue-header {
+text-align: center;
+    padding: 20px;
+    position: relative;
+}
+.logout-wrap {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.file-upload-wrapper {
+    min-height: 200px;
+    background: #f6f6f6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #cecece;
+    border-radius: 20px;
+    gap: 10px;
+    width: 50%;
+    padding: 10px;
+}
+.custom-file-upload {
+        display: inline-block;
+        padding: 10px 20px;
+        cursor: pointer;
+        background-color: #6a6afb;
+        color: #fff;
+        border-radius: 5px;
+        font-weight: bold;
+        min-height: 25px;
+        min-width: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s;
+    }
+
+    .custom-file-upload:hover {
+        background-color: #0056b3;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    .uploaded-files {
+        margin-top: 10px;
+    }
+
+    .uploaded-file {
+        display: flex;
+    justify-content: space-between;
+    align-items: center;
+        gap: 20px;
+    background: #ffffff;
+    padding: 8px 20px;
+    border-radius: 0;
+    margin-bottom: 5px;
+    }
+
+    .uploaded-file span.remove-file {
+        cursor: pointer;
+        color: red;
+        font-weight: bold;
+    }
+    .rs-callqueue-header span .fa-phone {
+    font-size: 38px;
+    line-height: 48px;
+    color: #ec4292;
+}
+.logout-wrap .btn .fa-sign-out {
+    font-size: 25px;
+    cursor: pointer;
+    color: #000;
+}
+.call-result-wrap {
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+.rs-btn {
+    padding: 10px 20px;
+    cursor: pointer;
+    color: #fff;
+    border-radius: 10px;
+    font-weight: bold;
+    min-height: 25px;
+    min-width: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 26px;
+    border: none;
+        background: transparent;
+}
+.rs-signout {
+    width: fit-content;
+    padding: 0;
+}
+.logout-wrap .btn {
+    min-width: 50px;
+    min-height: 50px;
+}
+.logout-wrap .btn:hover {
+background: transparent;
+}
+.rs-btn:focus-visible {
+    outline: none !important;
+}
+.callBtn {
+    background: #45bee6;
+}
+    .callBtn:disabled {
+     background: grey;
+     cursor: not-allowed;
+     opacity: 0.6;
+    }
+.download-sheet {
+    background: #45bee6;
+}
+
+
+
+.rs-prompt-wrapper {
+    border: 1px solid #cecece;
+    border-radius: 20px;
+    padding: 10px 10px;
+    width: 50%;
+    position: relative;
+    background: #f6f6f6;
+    display: block;
+    min-height: 100%;
+}
+.rs-field-wrap {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    min-height: 200px;
+}
+.prompt-inner-wrap {
+    height: 75%;
+    display: block;
+}
+#prompt {
+    height: 100%;
+    width: 100%;
+    border: none;
+    background: #f6f6f6;
+    font-size: 14px;
+}
+textarea#prompt:focus {
+    border: none;
+    outline: none;
+}
+.promptsendBtn {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: grey;
+    border-radius: 10px;
+}
+.input-head {
+    text-align: center;
+    margin: 5px 0 10px 0;
+    font-size: 16px;
+    color: #000;
+    font-weight: 600;
+}
+#charCount {
+    margin: 5px 0;
+    position: absolute;
+    top: 101%;
+    right: 5px;
+    z-index: 99999;
+    color: blue;
+    font-size: 14px;
+}
