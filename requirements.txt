@@ -10,7 +10,6 @@ python-dotenv
 tzdata
 pandas
 python-multipart
-vapi
 dateparser
 python-dateutil
 openpyxl
