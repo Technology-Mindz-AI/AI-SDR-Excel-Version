@@ -303,6 +303,7 @@ def send_meeting_invite(parsed, customer_name, customer_email):
                 }
             )
 
+
             logger.info(
                 f"[send_meeting_invite] Parsed in-person meeting time: {meeting_time_in_person_est}")
             if meeting_time_in_person_est is not None:
