@@ -4,8 +4,11 @@ import sqlite3
 DB_PATH = "queue.db"
 
 # --- DB Setup ---
+
+
 def init_db(logger):
-    logger.info("[init_db] Initializing the call_queue and customer_data databases and ensuring schema.")
+    logger.info(
+        "[init_db] Initializing the call_queue and customer_data databases and ensuring schema.")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     # Call queue for process management
@@ -18,7 +21,7 @@ def init_db(logger):
             phone_number TEXT UNIQUE,
             email TEXT,
             customer_requirements TEXT,
-            specific_prompt TEXT,  # NEW COLUMN
+            specific_prompt TEXT,
             to_call TEXT,
             notes TEXT,
             tasks TEXT,
@@ -37,7 +40,7 @@ def init_db(logger):
             phone_number TEXT UNIQUE,
             email TEXT,
             customer_requirements TEXT,
-            specific_prompt TEXT,  # NEW COLUMN
+            specific_prompt TEXT,
             last_call_status TEXT,
             country_code TEXT,
             industry TEXT,
