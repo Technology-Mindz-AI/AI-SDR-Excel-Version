@@ -25,6 +25,7 @@ def init_db(logger):
             phone_number TEXT,
             email TEXT,
             customer_requirements TEXT,
+            specific_prompt TEXT,
             to_call TEXT,
             notes TEXT,
             tasks TEXT,
@@ -42,6 +43,7 @@ def init_db(logger):
                 phone_number TEXT UNIQUE,
                 email TEXT,
                 customer_requirements TEXT,
+                specific_prompt TEXT,
                 last_call_status TEXT,
                 country_code TEXT,
                 industry TEXT,
@@ -145,6 +147,7 @@ def pop_next_call():
         return None
     finally:
         conn.close()
+
 
 def update_call_details(call_id: int, phone_number: str, lead_name: str, details: str):
     logger.info(f"[update_call_details] Updating call details for call_id: {call_id}.")
