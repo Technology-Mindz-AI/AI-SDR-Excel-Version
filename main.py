@@ -1020,6 +1020,7 @@ async def submit_prompt(
 
     return {"status": "success", "message": "Prompt saved successfully"}
 
+
 @app.post("/upload-file")
 async def upload_file(file: UploadFile = File(...), username: str = Depends(get_current_user)):
     logger.info(
@@ -1710,3 +1711,23 @@ def cleanup_stuck_calls():
 
 # # Start the polling thread at app startup
 # threading.Thread(target=poll_excel_status, daemon=True, name="ExcelStatusPoller").start()
+
+
+# For running the app
+if __name__ == "__main__":
+    import uvicorn
+    import os
+
+    # Get port from environment variable (Render sets this)
+    port = int(os.environ.get("PORT", 8000))
+
+    # Initialize database
+    init_db(logger=logger)
+
+    # Start the server
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False
+    )
