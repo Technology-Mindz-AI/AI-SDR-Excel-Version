@@ -38,6 +38,7 @@ from helperfuncs import (
     init_db,
     DB_PATH
 )
+from update_db_schema import update_database_schema
 from notes_and_tasks import (
     summarize_conversation_transcript,
     update_customer_data_notes_and_tasks,
@@ -1723,6 +1724,7 @@ if __name__ == "__main__":
 
     # Initialize database
     init_db(logger=logger)
+    update_database_schema()
 
     # Start the server
     uvicorn.run(
