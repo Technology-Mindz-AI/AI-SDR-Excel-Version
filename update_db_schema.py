@@ -11,6 +11,18 @@ def update_database_schema():
     c = conn.cursor()
     
     try:
+        # Check if call_queue table exists
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='call_queue'")
+        if not c.fetchone():
+            logger.error("[update_database_schema] call_queue table does not exist. Please run db_initialization.py first.")
+            return False
+        
+        # Check if customer_data table exists
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='customer_data'")
+        if not c.fetchone():
+            logger.error("[update_database_schema] customer_data table does not exist. Please run db_initialization.py first.")
+            return False
+        
         # Check if specific_prompt column exists in call_queue table
         c.execute("PRAGMA table_info(call_queue)")
         columns = [column[1] for column in c.fetchall()]
@@ -29,10 +41,12 @@ def update_database_schema():
         
         conn.commit()
         logger.info("[update_database_schema] Database schema updated successfully")
+        return True
         
     except Exception as e:
         logger.error(f"[update_database_schema] Error updating schema: {e}")
         conn.rollback()
+        return False
     finally:
         conn.close()
 
