@@ -195,7 +195,7 @@ def vapi_get_call_details(vapi_call_id: str, max_retries: int = 30, initial_dela
                 # Check if transcript is available
                 transcript_available = False
                 summary_available = False
-                
+
                 # Check various locations for transcript
                 if data.get('transcript'):
                     transcript_available = True
@@ -205,7 +205,7 @@ def vapi_get_call_details(vapi_call_id: str, max_retries: int = 30, initial_dela
                     transcript_available = True
                 elif data.get('analysis', {}).get('transcript'):
                     transcript_available = True
-                
+
                 # Check for summary
                 if data.get('summary'):
                     summary_available = True
@@ -225,7 +225,7 @@ def vapi_get_call_details(vapi_call_id: str, max_retries: int = 30, initial_dela
                 else:
                     logger.info(
                         f"[vapi_get_call_details] Transcript/summary not yet available. Waiting {delay} seconds before next attempt")
-                    
+
             else:
                 logger.error(
                     f"[vapi_get_call_details] Failed with status {resp.status_code}. Response: {resp.text}")
@@ -250,6 +250,7 @@ def vapi_get_call_details(vapi_call_id: str, max_retries: int = 30, initial_dela
     logger.error(
         f"[vapi_get_call_details] All retries failed for {vapi_call_id}")
     return None
+
 
 def extract_summary_transcript_metadata(payload: dict):
     """
@@ -292,7 +293,8 @@ def extract_summary_transcript_metadata(payload: dict):
         for msg in payload["messages"]:
             if isinstance(msg, dict):
                 role = msg.get("role", "unknown")
-                content = msg.get("content") or msg.get("message") or msg.get("text")
+                content = msg.get("content") or msg.get(
+                    "message") or msg.get("text")
                 if content:
                     messages_transcript.append(f"{role}: {content}")
         if messages_transcript:
@@ -319,6 +321,7 @@ def extract_summary_transcript_metadata(payload: dict):
     )
 
     return summary, transcript, metadata
+
 
 # Global dicts/mappings
 email_and_transcript = {}
@@ -498,7 +501,8 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
                     customer_email = None
                     with email_and_transcript_lock:
                         if str(call_sid) in email_and_transcript:
-                            customer_email = email_and_transcript[str(call_sid)].get("email")
+                            customer_email = email_and_transcript[str(
+                                call_sid)].get("email")
 
                     if vapi_call_id:
                         logger.info(
@@ -507,7 +511,8 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
                         if vapi_data:
                             logger.info(
                                 f"[poll_twilio_status] Successfully retrieved Vapi call details. Processing transcript and summary.")
-                            summary, transcript, metadata = extract_summary_transcript_metadata(vapi_data)
+                            summary, transcript, metadata = extract_summary_transcript_metadata(
+                                vapi_data)
                             logger.info(
                                 f"[poll_twilio_status] Extracted data - Summary: {'Yes' if summary else 'No'}, Transcript: {'Yes' if transcript else 'No'}")
 
@@ -516,12 +521,13 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
                                 try:
                                     logger.info(
                                         f"[poll_twilio_status] Processing transcript for call_id {call_id}")
-                                    parsed = summarize_conversation_transcript(transcript)
-                                    
+                                    parsed = summarize_conversation_transcript(
+                                        transcript)
+
                                     # Update customer data with notes and tasks
                                     update_customer_data_notes_and_tasks(
-                                        call_id=call_id, 
-                                        parsed=parsed, 
+                                        call_id=call_id,
+                                        parsed=parsed,
                                         db_path=DB_PATH
                                     )
                                     logger.info(
@@ -599,8 +605,6 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
     logger.info(
         f"[poll_twilio_status] Max wait time exceeded for callSid {call_sid}. No terminal status received.\n\n")
 
-
-        
 
 def initiate_call(
     phone_number: str,
@@ -721,12 +725,13 @@ def initiate_call(
 
 
 def load_all_prompts() -> str:
-    """Reads all saved prompts from the prompt file and concatenates them."""
+    """Reads the current prompt from the prompt file (only one prompt allowed)."""
     if not os.path.exists(PROMPT_FILE):
         return ""
     with open(PROMPT_FILE, "r", encoding="utf-8") as f:
-        return "\n".join([line.strip() for line in f if line.strip()])
-
+        # Return only the first line (current prompt) or empty string
+        lines = [line.strip() for line in f if line.strip()]
+        return lines[0] if lines else ""
 # --- Shared Queue Processing Function ---
 
 
@@ -772,8 +777,8 @@ def process_queue_single_run():
                     f"[process_queue_single_run] Excel export error: {export_exc}")
             return
 
-        # Extract call details
-        call_id, customer_name, customer_id, phone_number, email, customer_requirements, notes, tasks = next_call
+        # Extract call details (including specific_prompt)
+        call_id, customer_name, customer_id, phone_number, email, customer_requirements, notes, tasks, specific_prompt = next_call
 
         # Get additional customer data
         customer_data = None
@@ -781,15 +786,17 @@ def process_queue_single_run():
             with sqlite3.connect(DB_PATH) as conn:
                 c = conn.cursor()
                 c.execute(
-                    "SELECT company_name, country_code, industry, location FROM customer_data WHERE call_id = ?", (call_id,))
+                    "SELECT company_name, country_code, industry, location, specific_prompt FROM customer_data WHERE call_id = ?", (call_id,))
                 customer_data = c.fetchone()
 
             if customer_data:
-                company_name, country_code, industry, location = customer_data
+                company_name, country_code, industry, location, customer_specific_prompt = customer_data
                 company_name = company_name.strip() if company_name else None
                 country_code = country_code.strip() if country_code else None
                 industry = industry.strip() if industry else None
                 location = location.strip() if location else None
+                customer_specific_prompt = customer_specific_prompt.strip(
+                ) if customer_specific_prompt else ""
 
                 logger.info(
                     f"[process_queue_single_run] Additional data retrieved for call_id {call_id}:")
@@ -797,22 +804,50 @@ def process_queue_single_run():
                 logger.info(f"  Country Code: {country_code}")
                 logger.info(f"  Industry: {industry}")
                 logger.info(f"  Location: {location}")
+                logger.info(
+                    f"  Customer Specific Prompt: {customer_specific_prompt}")
             else:
                 logger.warning(
                     f"[process_queue_single_run] No additional customer data found for call_id: {call_id}")
-                company_name = country_code = industry = location = None
+                company_name = country_code = industry = location = customer_specific_prompt = ""
 
         except Exception as data_exc:
             logger.error(
                 f"[process_queue_single_run] Error getting customer data: {data_exc}")
-            company_name = country_code = industry = location = None
+            company_name = country_code = industry = location = customer_specific_prompt = ""
 
         # Build call details
-        prompts = load_all_prompts()
-        llm_prompt = f"{prompts}\n\nCustomer Notes:\n{notes}" if notes else f"{prompts}\n\nGreeting:\nHello, thank you for taking the time to speak with us."
+        current_prompt = load_all_prompts()
+        customer_specific_prompt = customer_specific_prompt.strip(
+        ) if customer_specific_prompt else ""
+
+        # Combine prompts logic
+        if current_prompt and customer_specific_prompt:
+            # Both prompts available - combine them
+            final_prompt = f"General prompt:\n{current_prompt}\n\nCUSTOMER-SPECIFIC PROMPT :\n{customer_specific_prompt}"
+            logger.info(
+                f"[process_queue_single_run] Using COMBINED prompts (Dashboard + Customer-specific)")
+        elif customer_specific_prompt:
+            # Only customer-specific prompt available
+            final_prompt = customer_specific_prompt
+            logger.info(
+                f"[process_queue_single_run] Using CUSTOMER-SPECIFIC prompt only")
+        elif current_prompt:
+            # Only dashboard prompt available
+            final_prompt = current_prompt
+            logger.info(
+                f"[process_queue_single_run] Using DASHBOARD prompt only")
+        else:
+            # No prompts available
+            final_prompt = ""
+            logger.info(
+                f"[process_queue_single_run] No prompts available, using default greeting")
+
+        llm_prompt = f"{final_prompt}\n\nCustomer Notes:\n{notes}" if notes else f"{final_prompt}\n\nGreeting:\nHello, thank you for taking the time to speak with us."
 
         details = f"These are the details of the customer you are speaking with. Name: {customer_name}:\n\n"
         details += f"Customer Requirements: {customer_requirements}\n"
+        details += f"Combined Prompt: {final_prompt}\n"
         details += f"Notes: {notes}\n"
         details += f"Tasks: {tasks}\n"
         details += f"Company Name: {company_name}\n"
@@ -823,6 +858,7 @@ def process_queue_single_run():
 
         logger.info(
             f"[process_queue_single_run] Processing call for {customer_name} (ID: {customer_id})")
+        logger.info(f"[process_queue_single_run] Using prompt: {final_prompt}")
 
         # Validate phone number
         phone = phone_number.strip() if phone_number else ""
@@ -968,17 +1004,21 @@ async def submit_prompt(
     payload: PromptRequest,
     user: str = Depends(get_current_user)
 ):
+    logger.info("[submit_prompt API] /submit-prompt endpoint called.\n\n")
     prompt_text = payload.prompt
 
     if not prompt_text:
         raise HTTPException(status_code=400, detail="Prompt text is required")
 
-    # Append new prompt (don't overwrite existing)
-    with open(PROMPT_FILE, "a", encoding="utf-8") as f:
-        f.write(prompt_text.strip() + "\n")
+    try:
+        with open(PROMPT_FILE, "w", encoding="utf-8") as f:
+            f.write(prompt_text.strip() + "\n")
+        logger.info("[submit_prompt] Prompt saved successfully.")
+    except Exception as e:
+        logger.error(f"[submit_prompt] Error saving prompt: {e}")
+        raise HTTPException(status_code=500, detail="Error saving prompt.")
 
     return {"status": "success", "message": "Prompt saved successfully"}
-
 
 @app.post("/upload-file")
 async def upload_file(file: UploadFile = File(...), username: str = Depends(get_current_user)):
@@ -1071,18 +1111,26 @@ async def add_call(username: str = Depends(get_current_user)):
 
         # Clear customer_data table before adding new batch
         c.execute("DELETE FROM customer_data")
-        logger.info(f"Deleted previous customer data.")
-        # c.execute("DELETE FROM call_queue")
-        # logger.info(f"Cleared previous call queue.")
+        logger.info("Deleted previous customer data.")
         added_count = 0
+
+        # ✅ Define helper function BEFORE loop
+        def safe_str(value, default=''):
+            if pd.isna(value) or value is None:
+                return default
+            return str(value).strip()
+
         for _, row in df.iterrows():
+            specific_prompt = safe_str(row.get('specific_prompt', ''))
             customer_name_raw = row.get('customer_name', '')
             if pd.isna(customer_name_raw):
                 customer_name = None
             else:
                 customer_name = str(customer_name_raw).strip()
+
             customer_id = (str(row.get('customer_id', '')) if row.get(
                 'customer_id', '') is not None else '').strip()
+
             # Sanitize phone_number
             phone_number_raw = row.get('phone_number', '')
             if phone_number_raw is None or (isinstance(phone_number_raw, float) and math.isnan(phone_number_raw)):
@@ -1091,6 +1139,7 @@ async def add_call(username: str = Depends(get_current_user)):
                 phone_number = str(int(phone_number_raw))
             else:
                 phone_number = str(phone_number_raw).strip()
+
             # Sanitize country_code
             country_code_raw = row.get('country_code', '')
             if country_code_raw is None or (isinstance(country_code_raw, float) and math.isnan(country_code_raw)):
@@ -1099,16 +1148,13 @@ async def add_call(username: str = Depends(get_current_user)):
                 country_code = str(int(country_code_raw))
             else:
                 country_code = str(country_code_raw).strip()
+
             logger.info(f"country_code: {country_code}")
+
             email = (str(row.get('email', '')) if row.get(
                 'email', '') is not None else '').strip()
             customer_requirements = (str(row.get('customer_requirements', '')) if row.get(
                 'customer_requirements', '') is not None else '').strip()
-
-            def safe_str(value, default=''):
-                if pd.isna(value) or value is None:
-                    return default
-                return str(value).strip()
 
             notes = safe_str(row.get('notes', ''))
             tasks = safe_str(row.get('tasks', ''))
@@ -1120,23 +1166,26 @@ async def add_call(username: str = Depends(get_current_user)):
                 'company_name', '') is not None else '').strip()
             location = (str(row.get('location', '')) if row.get(
                 'location', '') is not None else '').strip()
+
             logger.info(
-                f"Processing row: customer_id={customer_id}, customer_name={customer_name}, phone_number={phone_number}, to_call={to_call}")
+                f"Processing row: specific_prompt={specific_prompt}, customer_id={customer_id}, customer_name={customer_name}, phone_number={phone_number}, to_call={to_call}")
+
             if to_call.lower() == "yes":
                 # Insert into call_queue first to get call_id
                 if customer_name and phone_number:
                     try:
-                        c.execute("INSERT INTO call_queue (customer_name, customer_id, phone_number, email, customer_requirements, to_call, notes, tasks, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'queued')", (
-                            customer_name, customer_id, phone_number, email, customer_requirements, to_call, notes, tasks))
+                        c.execute("INSERT INTO call_queue (customer_name, customer_id, phone_number, email, customer_requirements, specific_prompt, to_call, notes, tasks, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued')", (
+                            customer_name, customer_id, phone_number, email, customer_requirements, specific_prompt, to_call, notes, tasks))
                         call_id = c.lastrowid
                         # Insert into customer_data with the same call_id
                         c.execute("""
-                            INSERT OR REPLACE INTO customer_data (call_id, customer_name, customer_id, phone_number, email, customer_requirements, to_call, notes, tasks, country_code, industry, company_name, location)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (call_id, customer_name, customer_id, phone_number, email, customer_requirements, to_call, notes, tasks, country_code, industry, company_name, location))
+                            INSERT OR REPLACE INTO customer_data (call_id, customer_name, customer_id, phone_number, email, customer_requirements, specific_prompt, to_call, notes, tasks, country_code, industry, company_name, location)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (call_id, customer_name, customer_id, phone_number, email, customer_requirements, specific_prompt, to_call, notes, tasks, country_code, industry, company_name, location))
                         added_count += 1
                     except Exception as e:
                         logger.error(f"[add_call] Failed to insert row: {e}")
+
         conn.commit()
         conn.close()
         response = {

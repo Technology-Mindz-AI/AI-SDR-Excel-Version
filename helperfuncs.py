@@ -78,7 +78,7 @@ class CallRequest(BaseModel):
     re_engage_values: Optional[str] = Field(None,
                                       description="Re-engagement value to set for the call queue entries",
                                         example="re-engage after 3 days")
-
+    specific_prompt: Optional[str] = Field(None, description="Customer-specific prompt")  # NEW FIELD
 class QueueUpdateRequest(BaseModel):
     id: int = Field(..., description="Queue entry ID")
     status: Optional[str] = Field(None, description="New status for the call (queued, processing, called)")
@@ -115,7 +115,7 @@ def pop_next_call():
         # Start transaction
         c.execute("BEGIN EXCLUSIVE")
         c.execute("""
-            SELECT call_id, customer_name, customer_id, phone_number, email, customer_requirements, notes, tasks
+            SELECT call_id, customer_name, customer_id, phone_number, email, customer_requirements, notes, tasks, specific_prompt
             FROM call_queue
             WHERE status = 'queued'
             ORDER BY created_at ASC
@@ -124,8 +124,7 @@ def pop_next_call():
         row = c.fetchone()
 
         if row:
-            call_id, customer_name, customer_id, phone_number, email, customer_requirements, notes, tasks = row
-
+            call_id, customer_name, customer_id, phone_number, email, customer_requirements, notes, tasks, specific_prompt = row
             # Mark as processing
             c.execute("""
                 UPDATE call_queue
@@ -134,7 +133,7 @@ def pop_next_call():
             """, (call_id,))
             conn.commit()
             logger.info(f"Marked call_id {call_id} as processing.")
-            return call_id, customer_name, customer_id, phone_number, email, customer_requirements, notes, tasks
+            return call_id, customer_name, customer_id, phone_number, email, customer_requirements, notes, tasks, specific_prompt
         else:
             logger.info("No queued calls found.")
             conn.commit()
@@ -146,7 +145,6 @@ def pop_next_call():
         return None
     finally:
         conn.close()
-
 
 def update_call_details(call_id: int, phone_number: str, lead_name: str, details: str):
     logger.info(f"[update_call_details] Updating call details for call_id: {call_id}.")
