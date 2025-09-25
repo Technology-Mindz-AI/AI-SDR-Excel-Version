@@ -205,8 +205,10 @@ def update_customer_data_notes_and_tasks(call_id, parsed, db_path="queue.db"):
     """
     Appends new notes and tasks (with timestamp) to the existing notes and tasks columns for a given call_id in customer_data.
     """
-    logger.info(f"[update_customer_data_notes_and_tasks] Starting update for call_id: {call_id}")
-    logger.info(f"[update_customer_data_notes_and_tasks] Parsed data: {parsed}")
+    logger.info(
+        f"[update_customer_data_notes_and_tasks] Starting update for call_id: {call_id}")
+    logger.info(
+        f"[update_customer_data_notes_and_tasks] Parsed data: {parsed}")
 
     if not parsed:
         logger.warning(
@@ -219,11 +221,13 @@ def update_customer_data_notes_and_tasks(call_id, parsed, db_path="queue.db"):
     row = c.fetchone()
     if row:
         existing_notes, existing_tasks = row
-        logger.info(f"[update_customer_data_notes_and_tasks] Existing notes: {existing_notes}")
-        logger.info(f"[update_customer_data_notes_and_tasks] Existing tasks: {existing_tasks}")
-        
-        new_notes = "No summary available. Conversation transcript missing." if not parsed else parsed.get(
-            "summary", "No summary available.")
+        logger.info(
+            f"[update_customer_data_notes_and_tasks] Existing notes: {existing_notes}")
+        logger.info(
+            f"[update_customer_data_notes_and_tasks] Existing tasks: {existing_tasks}")
+
+        new_notes = "No Notes available. Conversation transcript missing." if not parsed else parsed.get(
+            "summary", "No Notes available.")
         new_tasks = "No tasks found for this call." if not parsed else parsed.get(
             "tasks", "No tasks found for this call.")
 
@@ -293,16 +297,15 @@ def send_meeting_invite(parsed, customer_name, customer_email):
     # Handle in-person meeting invite
     if meeting_status_in_person:
         try:
-            current_datetime_est = datetime.now(ZoneInfo("America/New_York"))
+            current_datetime_est = datetime.now(ZoneInfo("Asia/Kolkata"))
             meeting_time_in_person_est = dateparser.parse(
                 meeting_time_in_person_raw,
                 settings={
                     'RELATIVE_BASE': current_datetime_est,
-                    'TIMEZONE': 'America/New_York',
+                    'TIMEZONE': 'Asia/Kolkata',
                     'RETURN_AS_TIMEZONE_AWARE': True
                 }
             )
-
 
             logger.info(
                 f"[send_meeting_invite] Parsed in-person meeting time: {meeting_time_in_person_est}")
@@ -335,12 +338,12 @@ def send_meeting_invite(parsed, customer_name, customer_email):
     # Handle virtual meeting invite
     if meeting_status_virtual:
         try:
-            current_datetime_est = datetime.now(ZoneInfo("America/New_York"))
+            current_datetime_est = datetime.now(ZoneInfo("Asia/Kolkata"))
             meeting_time_virtual_est = dateparser.parse(
                 meeting_time_virtual_raw,
                 settings={
                     'RELATIVE_BASE': current_datetime_est,
-                    'TIMEZONE': 'America/New_York',
+                    'TIMEZONE': 'Asia/Kolkata',
                     'RETURN_AS_TIMEZONE_AWARE': True
                 }
             )

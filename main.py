@@ -161,7 +161,7 @@ def vapi_start_outbound_call(
         raise e
 
 
-def vapi_get_call_details(vapi_call_id: str, max_retries: int = 30, initial_delay: float = 5.0) -> Optional[dict]:
+def vapi_get_call_details(vapi_call_id: str, max_retries: int = 5, initial_delay: float = 5.0) -> Optional[dict]:
     """
     Fetches details of a Vapi call (summary, transcript, metadata) by ID with retries.
     Waits for call to be fully processed with transcript available.
@@ -343,8 +343,16 @@ posted_call_ids_lock = threading.Lock()
 
 init_db(logger=logger)  # Initialize the database at startup
 
-TERMINAL_STATUSES = {"completed", "busy", "failed", "no-answer", "cancelled"}
-
+TERMINAL_STATUSES = {
+    "completed",
+    "busy",
+    "failed",
+    "no-answer",
+    "cancelled",
+    "canceled",
+    "failed",
+    "busy"
+}
 PROMPT_FILE = "prompts.txt"
 
 
@@ -477,109 +485,110 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
     auth = HTTPBasicAuth(account_sid, auth_token)
 
     elapsed = 0
+    last_status = None
+
     while elapsed < max_wait:
         try:
             response = requests.get(url, auth=auth, timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                status = data.get("status")
+                current_status = data.get("status")
                 logger.info(
-                    f"[poll_twilio_status] Twilio callSid {call_sid} status: {status}\n\n")
+                    f"[poll_twilio_status] Twilio callSid {call_sid} status: {current_status}\n\n")
 
-                if status in TERMINAL_STATUSES:
-                    logger.info(
-                        f"[poll_twilio_status] Terminal status '{status}' received for callSid {call_sid}.\n\n")
-
-                    # Try to get the Vapi call ID from our mapping
-                    vapi_call_id = None
-                    with call_sid_to_vapi_id_lock:
-                        vapi_call_id = call_sid_to_vapi_id.get(call_sid)
-                    logger.info(
-                        f"[poll_twilio_status] Found Vapi call ID: {vapi_call_id} for Twilio call SID: {call_sid}\n\n")
-
-                    # Get email from global dict
-                    customer_email = None
-                    with email_and_transcript_lock:
-                        if str(call_sid) in email_and_transcript:
-                            customer_email = email_and_transcript[str(
-                                call_sid)].get("email")
-
-                    if vapi_call_id:
+                # UPDATE STATUS IMMEDIATELY WHEN IT CHANGES
+                if current_status != last_status:
+                    try:
+                        conn = sqlite3.connect(DB_PATH)
+                        c = conn.cursor()
+                        c.execute(
+                            "UPDATE customer_data SET last_call_status = ? WHERE call_id = ?",
+                            (current_status, call_id)
+                        )
+                        conn.commit()
+                        conn.close()
                         logger.info(
-                            f"[poll_twilio_status] Attempting to fetch call details from Vapi for ID: {vapi_call_id}")
-                        vapi_data = vapi_get_call_details(vapi_call_id)
-                        if vapi_data:
-                            logger.info(
-                                f"[poll_twilio_status] Successfully retrieved Vapi call details. Processing transcript and summary.")
-                            summary, transcript, metadata = extract_summary_transcript_metadata(
-                                vapi_data)
-                            logger.info(
-                                f"[poll_twilio_status] Extracted data - Summary: {'Yes' if summary else 'No'}, Transcript: {'Yes' if transcript else 'No'}")
+                            f"[poll_twilio_status] Updated last_call_status to '{current_status}' for call_id {call_id}")
+                        last_status = current_status
+                    except Exception as update_error:
+                        logger.error(
+                            f"[poll_twilio_status] Failed to update last_call_status: {update_error}")
 
-                            # === CRITICAL: PROCESS THE TRANSCRIPT AND UPDATE DATABASE ===
-                            if transcript:
-                                try:
+                if current_status in TERMINAL_STATUSES:
+                    logger.info(
+                        f"[poll_twilio_status] Terminal status '{current_status}' received for callSid {call_sid}.\n\n")
+
+                    # === FIX: Update notes for ALL terminal statuses, not just "completed" ===
+                    if current_status == "completed":
+                        # Process transcript for completed calls
+                        vapi_call_id = None
+                        with call_sid_to_vapi_id_lock:
+                            vapi_call_id = call_sid_to_vapi_id.get(call_sid)
+
+                        if vapi_call_id:
+                            vapi_data = vapi_get_call_details(vapi_call_id)
+                            if vapi_data:
+                                logger.info(f"[poll_twilio_status] Retrieved Vapi data for call_id {call_id} using vapi_call_id {vapi_call_id}")
+                                summary, transcript, metadata = extract_summary_transcript_metadata(
+                                    vapi_data)
+                                if transcript:
                                     logger.info(
                                         f"[poll_twilio_status] Processing transcript for call_id {call_id}")
-                                    parsed = summarize_conversation_transcript(
-                                        transcript)
-
-                                    # Update customer data with notes and tasks
-                                    update_customer_data_notes_and_tasks(
-                                        call_id=call_id,
-                                        parsed=parsed,
-                                        db_path=DB_PATH
-                                    )
-                                    logger.info(
-                                        f"[poll_twilio_status] Updated notes and tasks for call_id {call_id}")
-
-                                    # Send meeting invite if applicable
-                                    if customer_email and customer_email != "No email provided":
-                                        try:
-                                            send_meeting_invite(
-                                                parsed=parsed,
-                                                customer_name=customer_name,
-                                                customer_email=customer_email
-                                            )
-                                            logger.info(
-                                                f"[poll_twilio_status] Sent meeting invite to {customer_email}")
-                                        except Exception as invite_exc:
-                                            logger.error(
-                                                f"[poll_twilio_status] Failed to send meeting invite: {invite_exc}")
-
-                                except Exception as process_exc:
-                                    logger.error(
-                                        f"[poll_twilio_status] Error processing transcript: {process_exc}")
-                            else:
-                                logger.warning(
-                                    f"[poll_twilio_status] No transcript available for call_id {call_id}")
-                        else:
-                            logger.error(
-                                f"[poll_twilio_status] Failed to get Vapi call details for ID: {vapi_call_id}")
+                                    try:
+                                        parsed = summarize_conversation_transcript(
+                                            transcript)
+                                        logger.info(f"[poll_twilio_status] Parsed summary and tasks for call_id {call_id}: {parsed}")
+                                        update_customer_data_notes_and_tasks(
+                                            call_id=call_id,
+                                            parsed=parsed,
+                                            db_path=DB_PATH
+                                        )
+                                    except Exception as process_exc:
+                                        logger.error(
+                                            f"[poll_twilio_status] Error processing transcript: {process_exc}")
+                                    #GET CUSTOMER EMAIL FROM CUSTOMER DATA TABLE USING THE CALL ID
+                                    customer_email = None
+                                    try:
+                                        conn = sqlite3.connect(DB_PATH)
+                                        c = conn.cursor()
+                                        c.execute(
+                                            "SELECT email FROM customer_data WHERE call_id = ?", (call_id,))
+                                        result = c.fetchone()
+                                        if result:
+                                            customer_email = result[0]
+                                        conn.close()
+                                    except Exception as email_exc:
+                                        logger.error(
+                                            f"[poll_twilio_status] Error fetching customer email: {email_exc}")
+                                    try:
+                                        send_meeting_invite(
+                                            parsed, customer_name, customer_email)
+                                    except Exception as send_exc:
+                                        logger.error(
+                                            f"[poll_twilio_status] Error sending meeting invite: {send_exc}")
                     else:
-                        logger.error(
-                            f"[poll_twilio_status] No Vapi call ID found for Twilio call SID: {call_sid}")
+                        # For non-completed calls (busy, no-answer, failed), create appropriate notes
+                        status_notes = {
+                            "busy": "Call ended - recipient's line was busy",
+                            "no-answer": "Call ended - no answer from recipient",
+                            "failed": "Call failed to connect",
+                            "cancelled": "Call was cancelled"
+                        }
 
-                    logger.info(
-                        f"[poll_twilio_status] Updating customer_data with last_call_status: {status}\n\n")
+                        note = status_notes.get(
+                            current_status, f"Call ended with status: {current_status}")
+                        logger.info(
+                            f"[poll_twilio_status] Updating notes for {current_status} status: {note}")
 
-                    conn = sqlite3.connect(DB_PATH)
-                    c = conn.cursor()
-                    c.execute(
-                        "UPDATE customer_data SET last_call_status = ? WHERE call_id = ?", (status, call_id))
-                    conn.commit()
-                    conn.close()
-
-                    # Update notes for non-completed calls (if transcript processing failed above)
-                    if status != "completed" or not transcript:
-                        logger.warning(
-                            f"[poll_twilio_status] PARSED == NONE being passed to append_notes_and_tasks since call status: {status} or no transcript")
                         update_customer_data_notes_and_tasks(
-                            call_id=call_id, parsed=None, db_path="queue.db")
+                            call_id=call_id,
+                            parsed={"notes": note},
+                            db_path=DB_PATH
+                        )
 
-                    # Always remove the call from queue regardless of status
+                    # Remove from queue for all terminal statuses
                     logger.info(
-                        f"removing {call_id} from queue after terminal status {status}\n\n")
+                        f"removing {call_id} from queue after terminal status {current_status}\n\n")
                     pop_call_by_id(call_id)
                     threading.Thread(
                         target=process_queue_single_run, daemon=True).start()
@@ -587,13 +596,24 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
             elif response.status_code == 404:
                 logger.error(
                     f"[poll_twilio_status] Twilio callSid {call_sid} not found (404). Removing from queue.\n\n")
+                # Update status to "not-found" before removing
+                try:
+                    conn = sqlite3.connect(DB_PATH)
+                    c = conn.cursor()
+                    c.execute(
+                        "UPDATE customer_data SET last_call_status = ? WHERE call_id = ?",
+                        ("not-found", call_id)
+                    )
+                    conn.commit()
+                    conn.close()
+                except Exception as update_error:
+                    logger.error(
+                        f"[poll_twilio_status] Failed to update not-found status: {update_error}")
+
                 pop_call_by_id(call_id)
                 threading.Thread(
                     target=process_queue_single_run, daemon=True).start()
                 return
-            else:
-                logger.warning(
-                    f"[poll_twilio_status] Twilio API error {response.status_code}: {response.text}\n\n")
 
         except Exception as e:
             logger.error(
@@ -602,8 +622,28 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
         time.sleep(poll_interval)
         elapsed += poll_interval
 
+    # Handle timeout case
     logger.info(
         f"[poll_twilio_status] Max wait time exceeded for callSid {call_sid}. No terminal status received.\n\n")
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute(
+            "UPDATE customer_data SET last_call_status = ? WHERE call_id = ?",
+            ("timeout", call_id)
+        )
+        conn.commit()
+        conn.close()
+        logger.info(
+            f"[poll_twilio_status] Updated last_call_status to 'timeout' for call_id {call_id}")
+    except Exception as update_error:
+        logger.error(
+            f"[poll_twilio_status] Failed to update timeout status: {update_error}")
+
+    # Remove timed out call from queue
+    pop_call_by_id(call_id)
+    threading.Thread(target=process_queue_single_run, daemon=True).start()
 
 
 def initiate_call(
@@ -618,21 +658,50 @@ def initiate_call(
 ) -> bool:
     logger.info(f"[initiate_call] country code: {country_code}")
     logger.info(f"[initiate_call] phone number: {phone_number}")
+
+    # Function to update status in database
+    def update_call_status(status, error_message=None):
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute(
+                "UPDATE customer_data SET last_call_status = ? WHERE call_id = ?",
+                (status, call_id)
+            )
+            conn.commit()
+            conn.close()
+            logger.info(
+                f"[{correlation_id}] Updated last_call_status to '{status}' for call_id {call_id}")
+
+            # Also update notes with error message if provided
+            if error_message:
+                update_customer_data_notes_and_tasks(
+                    call_id=call_id,
+                    parsed={"notes": f"Call initiation failed: {error_message}"},
+                    db_path=DB_PATH
+                )
+        except Exception as update_error:
+            logger.error(
+                f"[{correlation_id}] Failed to update status: {update_error}")
+
     try:
         logger.info(
             f"[initiate_call] Starting outbound call for {lead_name} (SF ID: {customer_id})\n\n")
+
         # Format phone number with country code in E.164 format
         phone_number_final = format_and_validate_number(
             phone_number, country_code)
         if not phone_number_final:
-            logger.error(
-                f"[{correlation_id}] Invalid phone number format: {phone_number} with country code: {country_code}")
+            error_msg = f"Invalid phone number format: {phone_number} with country code: {country_code}"
+            logger.error(f"[{correlation_id}] {error_msg}")
+            update_call_status("invalid-phone", error_msg)
             return False
 
         logger.info(
             f"[initiate_call] Using phone number: {phone_number_final}\n\n")
         logger.info(
             f"[{correlation_id}] Initiating outbound call to {phone_number_final} with email: {email} being sent to initiate call function.\n\n")
+
         # Build dynamic variables for Vapi call
         dynamic_vars = {
             "first_message": generate_initial_message(details),
@@ -683,7 +752,7 @@ def initiate_call(
             with email_and_transcript_lock:
                 email_and_transcript[str(call_key_for_email)] = {
                     "email": email,
-                    "transcript": None  # Will be populated when we get the transcript
+                    "transcript": None
                 }
 
         # Store mapping for fallback from Twilio->Vapi and queue_id->Vapi
@@ -714,13 +783,43 @@ def initiate_call(
 
         logger.info(
             f"[{correlation_id}] Successfully initiated call to {phone_number_final} (Customer ID: {customer_id})\n\n")
+
+        # Update status to "initiated" when call starts successfully
+        update_call_status("initiated")
         return True
 
-    except Exception as e:
+    except requests.HTTPError as http_err:
+        # Handle specific HTTP errors
+        error_message = str(http_err)
+        status_code = http_err.response.status_code if hasattr(
+            http_err, 'response') else 'unknown'
+
         logger.error(
-            f"[{correlation_id}] Call failed. Error while making the call: {e}\n\n")
-        update_customer_data_notes_and_tasks(
-            call_id=call_id, parsed=None, db_path="queue.db")
+            f"[{correlation_id}] HTTP Error {status_code}: {error_message}")
+
+        if status_code == 400:
+            if "valid phone number" in error_message or "E.164" in error_message:
+                update_call_status("invalid-phone", error_message)
+            else:
+                update_call_status("initialize-failed", error_message)
+        elif status_code == 401:
+            update_call_status("auth-error", error_message)
+        elif status_code == 404:
+            update_call_status("not-found", error_message)
+        elif status_code == 429:
+            update_call_status("rate-limit", error_message)
+        elif status_code >= 500:
+            update_call_status("server-error", error_message)
+        else:
+            update_call_status("api-error", error_message)
+
+        return False
+
+    except Exception as e:
+        error_message = f"Unexpected error: {str(e)}"
+        logger.error(
+            f"[{correlation_id}] Call failed. Error while making the call: {error_message}\n\n")
+        update_call_status("call-failed", error_message)
         return False
 
 
@@ -862,18 +961,7 @@ def process_queue_single_run():
             if not call_success:
                 logger.error(
                     f"[process_queue_single_run] Call initiation failed for call_id {call_id}")
-                # Update status before removing from queue
-                try:
-                    with sqlite3.connect(DB_PATH) as conn:
-                        c = conn.cursor()
-                        c.execute(
-                            "UPDATE customer_data SET last_call_status = ? WHERE call_id = ?",
-                            ("failed", call_id)
-                        )
-                except Exception as update_exc:
-                    logger.error(
-                        f"[process_queue_single_run] Failed to update status: {update_exc}")
-
+                # Status is already updated by initiate_call function, just remove from queue
                 pop_call_by_id(call_id)
                 threading.Thread(
                     target=process_queue_single_run, daemon=True).start()
@@ -884,12 +972,13 @@ def process_queue_single_run():
         except Exception as call_exc:
             logger.error(
                 f"[process_queue_single_run] Call initiation error for call_id {call_id}: {call_exc}")
+            # Update status for unexpected errors during initiation
             try:
                 with sqlite3.connect(DB_PATH) as conn:
                     c = conn.cursor()
                     c.execute(
                         "UPDATE customer_data SET last_call_status = ? WHERE call_id = ?",
-                        ("error", call_id)
+                        ("initiation-error", call_id)
                     )
             except Exception as update_exc:
                 logger.error(
@@ -1599,23 +1688,23 @@ def cleanup_stuck_calls():
                     #         data = fetch_map[entity_type](entity_id)
                     #         owner_id = data.get("OwnerId", "Unknown")
         except Exception as detail_exc:
-                    #         logger.error(f"[{call_id}] Failed to fetch {entity_type} details: {detail_exc}")
-                    # except Exception as fetch_exc:
-                    #     logger.error(f"[{call_id}] Error fetching entity details: {fetch_exc}")
+            #         logger.error(f"[{call_id}] Failed to fetch {entity_type} details: {detail_exc}")
+            # except Exception as fetch_exc:
+            #     logger.error(f"[{call_id}] Error fetching entity details: {fetch_exc}")
 
-                    # Log the timeout event in notes/tasks
-                    try:
-                        timeout_note = f"Call timed out after 15 minutes of no response. Owner: {owner_id}"
-                        update_customer_data_notes_and_tasks(
-                            call_id=call_id,
-                            parsed={"notes": timeout_note},
-                            db_path=DB_PATH
-                        )
-                        logger.info(
-                            f"[{call_id}] Logged timeout note to customer data.")
-                    except Exception as note_exc:
-                        logger.error(
-                            f"[{call_id}] Failed to log timeout note: {note_exc}")
+            # Log the timeout event in notes/tasks
+            try:
+                timeout_note = f"Call timed out after 15 minutes of no response. Owner: {owner_id}"
+                update_customer_data_notes_and_tasks(
+                    call_id=call_id,
+                    parsed={"notes": timeout_note},
+                    db_path=DB_PATH
+                )
+                logger.info(
+                    f"[{call_id}] Logged timeout note to customer data.")
+            except Exception as note_exc:
+                logger.error(
+                    f"[{call_id}] Failed to log timeout note: {note_exc}")
 
-                    threading.Thread(
-                        target=process_queue_single_run, daemon=True).start()
+            threading.Thread(
+                target=process_queue_single_run, daemon=True).start()
