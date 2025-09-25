@@ -528,7 +528,8 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
                         if vapi_call_id:
                             vapi_data = vapi_get_call_details(vapi_call_id)
                             if vapi_data:
-                                logger.info(f"[poll_twilio_status] Retrieved Vapi data for call_id {call_id} using vapi_call_id {vapi_call_id}")
+                                logger.info(
+                                    f"[poll_twilio_status] Retrieved Vapi data for call_id {call_id} using vapi_call_id {vapi_call_id}")
                                 summary, transcript, metadata = extract_summary_transcript_metadata(
                                     vapi_data)
                                 if transcript:
@@ -537,7 +538,8 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
                                     try:
                                         parsed = summarize_conversation_transcript(
                                             transcript)
-                                        logger.info(f"[poll_twilio_status] Parsed summary and tasks for call_id {call_id}: {parsed}")
+                                        logger.info(
+                                            f"[poll_twilio_status] Parsed summary and tasks for call_id {call_id}: {parsed}")
                                         update_customer_data_notes_and_tasks(
                                             call_id=call_id,
                                             parsed=parsed,
@@ -546,7 +548,7 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
                                     except Exception as process_exc:
                                         logger.error(
                                             f"[poll_twilio_status] Error processing transcript: {process_exc}")
-                                    #GET CUSTOMER EMAIL FROM CUSTOMER DATA TABLE USING THE CALL ID
+                                    # GET CUSTOMER EMAIL FROM CUSTOMER DATA TABLE USING THE CALL ID
                                     customer_email = None
                                     try:
                                         conn = sqlite3.connect(DB_PATH)
@@ -708,7 +710,7 @@ def initiate_call(
             "customer_name": lead_name,
             "customer_details": details,
             "customer_id": customer_id,
-            "date_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            # "date_today": datetime.now().strftime("%A, %B %d, %Y"),
             "email": email or "Please check the details for email",
             "call_id": call_id
         }
@@ -719,7 +721,8 @@ def initiate_call(
             "variableValues": {
                 "customer_name": lead_name,
                 "customer_details": details,
-                "email": email or "Please check the details for email"
+                "email": email or "Please check the details for email",
+                "today_date": datetime.now().strftime("%Y-%m-%d")  # ISO format=
             }
         }
 
@@ -877,7 +880,7 @@ def process_queue_single_run():
             return
 
         # Extract call details
-        call_id, customer_name, customer_id, phone_number, email, customer_requirements, notes, tasks, specific_prompt_from_queue = next_call
+        call_id, customer_name, customer_id, phone_number, email, customer_requirements, notes, tasks, specific_prompt = next_call
 
         # Get additional customer data including specific_prompt
         customer_data = None

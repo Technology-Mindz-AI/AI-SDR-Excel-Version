@@ -89,6 +89,9 @@ def summarize_conversation_transcript(conversation_transcript):
         if meeting_type_virtual is True, then meeting_time_virtual_raw should not be empty.
         If meeting_type_in_person is False, then meeting_time_in_person_raw should be an empty string.
         If meeting_type_virtual is False, then meeting_time_virtual_raw should be an empty string.
+        If the user give the past date dont consider that as a valid date, and make meeting_schedule_is_true as false.
+        If user is not giving the future date, and still giving the past date then consider that as a invalid date  and time as well - and do meeting_schedule_is_true as false.
+        If the user give the date which is not possible to schedule a meeting like 32nd jan etc, dont consider that as a valid date and make meeting_schedule_is_true as false.
         If both meeting_type_in_person and meeting_type_virtual are False, then both meeting_time_in_person_raw and meeting_time_virtual_raw should be empty strings.
         If both meeting_type_in_person and meeting_type_virtual are True, then both meeting_time_in_person_raw and meeting_time_virtual_raw should contain the respective preferred times.
         your final JSON response should look like this (this is just an example, do not use these values.):\n\n
@@ -318,8 +321,23 @@ def send_meeting_invite(parsed, customer_name, customer_email):
                         "attendee_email": customer_email,
                         "attendee_name": customer_name,
                         "subject": "In-person Meeting invite from Technology Mindz",
-                        "body": """Hi, we're really grateful that you could give us some of your precious time.
-                                We'll make sure it's worth your while.""",
+                        "body": f"""<html>
+                            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                                <p>Dear {customer_name},</p>
+                                
+                                <p>Thank you for your interest in TechnologyMindz! We're excited to meet with you in person to discuss how we can help bring your vision to life.</p>
+                                
+                                
+                                
+                                <p><strong>Looking forward to meeting you!</strong></p>
+                                
+                                <p>Best regards,<br>
+                                <strong>The TechnologyMindz Team</strong></p>
+                                
+                                <hr style="margin-top: 20px; border: none; border-top: 1px solid #ddd;">
+                                <p style="font-size: 12px; color: #666;">This meeting was scheduled following your recent conversation with our AI assistant.</p>
+                            </body>
+                            </html>""",
                         "start_time": meeting_time_in_person,
                         "duration_minutes": 30,
                         "meeting_type": "in_person"
@@ -359,8 +377,23 @@ def send_meeting_invite(parsed, customer_name, customer_email):
                         "attendee_email": customer_email,
                         "attendee_name": customer_name,
                         "subject": "Virtual Meeting invite from Technology Mindz",
-                        "body": """Hi, we're really grateful that you could give us some of your precious time.
-                                We'll make sure it's worth your while.""",
+                        "body": f"""<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <p>Dear {customer_name},</p>
+    
+    <p>Thank you for your interest in TechnologyMindz! We're excited to meet with you in person to discuss how we can help bring your vision to life.</p>
+    
+    
+    
+    <p><strong>Looking forward to meeting you!</strong></p>
+    
+    <p>Best regards,<br>
+    <strong>The TechnologyMindz Team</strong></p>
+    
+    <hr style="margin-top: 20px; border: none; border-top: 1px solid #ddd;">
+    <p style="font-size: 12px; color: #666;">This meeting was scheduled following your recent conversation with our AI assistant.</p>
+</body>
+</html>""",
                         "start_time": meeting_time_virtual,
                         "duration_minutes": 30,
                         "meeting_type": "virtual"
