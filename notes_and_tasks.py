@@ -71,7 +71,7 @@ def summarize_conversation_transcript(conversation_transcript):
 
         ### Rules:
         - Provide a short but clear **summary** of the conversation.  
-        - Extract only the **explicit tasks** that the customer asks the company to perform.  
+        - Extract all the **tasks** that the customer asks the company to perform.  
         - Ignore greetings, agent actions, or general chit-chat.  
         - Do not treat customer preferences or requirements as tasks unless they request the company to take action.  
         - Detect if the customer wants to **schedule a meeting** with the owner.  
