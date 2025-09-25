@@ -67,43 +67,39 @@ def summarize_conversation_transcript(conversation_transcript):
     meeting_time_virtual_raw = ""
 
     for idx, chunk in enumerate(chunks):
-        system_prompt = """You are a helpful assistant that extracts summary and tasks from AI call transcripts. 
-        The conversation transcript is provided by the user.
-        The details of the tasks should be detailed and descriptive. 
-        Make sure to include all tasks mentioned in the conversation chunk.
-        Make sure you **do not** miss any tasks and/or their details.
-        **Do not** take normal conversation where the customer is expressing their requirements as a task. Only take the task if the customer explicitly wants the company to perform an action.
-        from the transcript, you have to summarize the conversation in short.
-        from the transcript, you have to extract the tasks that the customer asks to perform.
-        Only extract tasks that the customer/user explicitly wants the company to perform. Ignore greetings, agent actions, and generic conversational flow.
-        from the transcript, you have to check if the customer wants to schedule a meeting with the owner.
-        if the customer wants to schedule a meeting, you have to return the meeting status as True.
-        if the customer wants to schedule an in-person meeting, you have to return meeting_type_in_person in JSON response with a boolean value True. If the customer does not want to schedule an in-person meeting, you have to return meeting_type_in_person as False.
-        "In-person meeting" means the customer wants to visit a showroom or a store or wants to have a meeting at a physical location.
-        if the customer wants to schedule an in person meeting, then find out the time that the user prefers for the in-person meeting and return it in the JSON response as meeting_time_in_person_raw.
-        if the customer wants to schedule a virtual meeting, you have to return meeting_type_virtual in JSON response with a boolean value True. If the customer does not want to schedule a virtual meeting, you have to return meeting_type_virtual as False.
-        if the customer wants to schedule a virtual meeting, then find out the time that the user prefers for the virtual meeting and return it in the JSON response as meeting_time_virtual_raw.
-        if the customer wants to schedule both a virtual and an in-person meeting, you have to return both meeting_type_in_person and meeting_type_virtual as True. In this case, you have to find out the time that the user prefers for both meetings and return it in the JSON response as meeting_time_in_person_raw and meeting_time_virtual_raw.
-        if the customer does not want to schedule a meeting, you have to return the meeting status as False and also return meeting_type_in_person and meeting_type_virtual as False. In this case, you do not need to return meeting_time_in_person_raw and meeting_time_virtual_raw. Just return them as empty strings. But it is applicable only if the customer does not want to schedule a meeting.
-        if meeting_type_in_person is True, then meeting_time_in_person_raw should not be empty.
-        if meeting_type_virtual is True, then meeting_time_virtual_raw should not be empty.
-        If meeting_type_in_person is False, then meeting_time_in_person_raw should be an empty string.
-        If meeting_type_virtual is False, then meeting_time_virtual_raw should be an empty string.
-        If the user give the past date dont consider that as a valid date, and make meeting_schedule_is_true as false.
-        If user is not giving the future date, and still giving the past date then consider that as a invalid date  and time as well - and do meeting_schedule_is_true as false.
-        If the user give the date which is not possible to schedule a meeting like 32nd jan etc, dont consider that as a valid date and make meeting_schedule_is_true as false.
-        If both meeting_type_in_person and meeting_type_virtual are False, then both meeting_time_in_person_raw and meeting_time_virtual_raw should be empty strings.
-        If both meeting_type_in_person and meeting_type_virtual are True, then both meeting_time_in_person_raw and meeting_time_virtual_raw should contain the respective preferred times.
-        your final JSON response should look like this (this is just an example, do not use these values.):\n\n
-        {
-            "summary": "the detailed summary of the conversation",
-            "tasks": 1. Get the product details , 2. Call Tom , ...,
-            "meeting_schedule_is_true": true/false,
-            "meeting_type_in_person": true/false,
-            "meeting_type_virtual": true/false,
-            "meeting_time_in_person_raw": "in person raw meeting time as string",
-            "meeting_time_virtual_raw": "virtual meeting time as string"
+        system_prompt = """You are a helpful assistant that extracts a summary and actionable tasks from AI call transcripts. The transcript will be provided by the user.
+
+        ### Rules:
+        - Provide a short but clear **summary** of the conversation.  
+        - Extract only the **explicit tasks** that the customer asks the company to perform.  
+        - Ignore greetings, agent actions, or general chit-chat.  
+        - Do not treat customer preferences or requirements as tasks unless they request the company to take action.  
+        - Detect if the customer wants to **schedule a meeting** with the owner.  
+        - If yes → set `"meeting_schedule_is_true": true`.  
+        - If no → set `"meeting_schedule_is_true": false`.  
+
+        ### Meeting Type Rules:
+        - Always set `"meeting_type_in_person": false` and `"meeting_time_in_person_raw": ""`.  
+        - If the customer wants a **virtual meeting**:  
+        - Set `"meeting_type_virtual": true`.  
+        - Extract the customer’s **preferred meeting time** as `"meeting_time_virtual_raw"`.  
+        - If the customer does **not** want a virtual meeting:  
+        - Set `"meeting_type_virtual": false`.  
+        - Set `"meeting_time_virtual_raw": ""`.  
+
+        ### Output:
+        - Always return a **single-line valid JSON object** only (no extra spaces, no newlines, no markdown).  
+        - Example format (values are examples only, do not reuse them):
+        { 
+            "summary": "the detailed summary of the conversation", 
+            "tasks": 1. Get the product details , 2. Call Tom , ..., 
+            "meeting_schedule_is_true": true/false, 
+            "meeting_type_in_person": false, 
+            "meeting_type_virtual": true/false, 
+            "meeting_time_in_person_raw": "in person raw meeting time as string", 
+            "meeting_time_virtual_raw": "virtual meeting time as string" 
         }
+
         Make sure to return the JSON response in a single line without any extra spaces or newlines.
         Do not return any other text or explanation. Just return the JSON response as it is.
         Do not return ````json`` or any other formatting. Just return the JSON response as it is."""
@@ -381,7 +377,7 @@ def send_meeting_invite(parsed, customer_name, customer_email):
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <p>Dear {customer_name},</p>
     
-    <p>Thank you for your interest in TechnologyMindz! We're excited to meet with you in person to discuss how we can help bring your vision to life.</p>
+    <p>Thank you for scheduling a virtual consultation with TechnologyMindz! We're delighted to connect with you online to explore how we can transform your space and bring your design dreams to reality..</p>
     
     
     

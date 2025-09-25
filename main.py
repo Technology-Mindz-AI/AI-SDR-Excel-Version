@@ -532,12 +532,12 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
                                     f"[poll_twilio_status] Retrieved Vapi data for call_id {call_id} using vapi_call_id {vapi_call_id}")
                                 summary, transcript, metadata = extract_summary_transcript_metadata(
                                     vapi_data)
-                                if transcript:
+                                if summary:
                                     logger.info(
                                         f"[poll_twilio_status] Processing transcript for call_id {call_id}")
                                     try:
                                         parsed = summarize_conversation_transcript(
-                                            transcript)
+                                            summary)
                                         logger.info(
                                             f"[poll_twilio_status] Parsed summary and tasks for call_id {call_id}: {parsed}")
                                         update_customer_data_notes_and_tasks(
@@ -711,6 +711,7 @@ def initiate_call(
             "customer_details": details,
             "customer_id": customer_id,
             # "date_today": datetime.now().strftime("%A, %B %d, %Y"),
+            # today_date: datetime.now().strftime("%Y-%m-%d"),
             "email": email or "Please check the details for email",
             "call_id": call_id
         }
