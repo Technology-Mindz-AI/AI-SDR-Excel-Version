@@ -287,7 +287,7 @@ COUNTRY_CODE_MAP = {
 # Assuming these constants are set somewhere in your environment
 DB_PATH = "queue.db"
 
-def generate_initial_message(lead_data: str) -> str:
+def generate_initial_message(lead_data: str, llm_prompt: str = "") -> str:
     import time
     client = Groq(api_key=settings.GROQ_API_KEY)
 
@@ -304,14 +304,19 @@ def generate_initial_message(lead_data: str) -> str:
         "**Necessarily** after saying 'Hi {name of the user}, say 'This is Technology Mindz's AI assistant.' Then talk a little about what you can see in their {lead data} in not more than 10 to 20 words and then necessarily ask the user if this is the right time to talk."
        
     )
-    user_prompt = f"Here is the lead data:\n{lead_data[:8000]}\nGenerate Technology Mindz's AI Assistant a first message that Technology Mindz's AI assistant would say when reaching out to understand their requirements and offer help."
+    if llm_prompt:
+        enhanced_prompt = f"{system_prompt}\n\nAdditional Instructions:\n{llm_prompt}"
+    else:
+        enhanced_prompt = system_prompt
+        
+    user_prompt = f"Here is the customer data:\n{lead_data[:8000]}\nGenerate Technology Mindz's AI Assistant a first message that Technology Mindz's AI assistant would say when reaching out to understand their requirements and offer help."
 
     max_retries = 3
     for attempt in range(max_retries):
         try:
             chat_completion = client.chat.completions.create(
                 messages=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": enhanced_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
                 model="llama-3.3-70b-versatile"

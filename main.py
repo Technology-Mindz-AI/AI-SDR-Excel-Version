@@ -650,7 +650,8 @@ def poll_twilio_status(call_sid, call_id, customer_id, customer_name, max_wait=1
 
 def initiate_call(
     phone_number: str,
-    details: str,
+    customer_details: str,  # Rename from 'details' to 'customer_details'
+    llm_prompt: str,        # Add new parameter for LLM prompt
     lead_name: str,
     customer_id: str,
     correlation_id: str,
@@ -705,25 +706,29 @@ def initiate_call(
             f"[{correlation_id}] Initiating outbound call to {phone_number_final} with email: {email} being sent to initiate call function.\n\n")
 
         # Build dynamic variables for Vapi call
+        # Build dynamic variables for Vapi call
+        # Build dynamic variables for Vapi call
         dynamic_vars = {
-            "first_message": generate_initial_message(details),
+            "first_message": generate_initial_message(customer_details),
             "customer_name": lead_name,
-            "customer_details": details,
+            "customer_details": customer_details,  # Customer-facing details
+            "llm_prompt": llm_prompt,              # LLM prompt as separate variable
             "customer_id": customer_id,
-            # "date_today": datetime.now().strftime("%A, %B %d, %Y"),
-            # today_date: datetime.now().strftime("%Y-%m-%d"),
             "email": email or "Please check the details for email",
-            "call_id": call_id
+            "call_id": call_id,
+            "today_date": datetime.now().strftime("%Y-%m-%d")
         }
 
-        # Create assistant overrides for first message and variables
+        # Or if you don't want to send LLM prompt to Vapi at all, remove it completely
+
+        # Create assistant overrides
         assistant_overrides = {
             "firstMessage": dynamic_vars["first_message"],
             "variableValues": {
                 "customer_name": lead_name,
-                "customer_details": details,
+                "customer_details": customer_details,  # Only customer details
                 "email": email or "Please check the details for email",
-                "today_date": datetime.now().strftime("%Y-%m-%d")  # ISO format=
+                "today_date": datetime.now().strftime("%Y-%m-%d")
             }
         }
 
@@ -919,22 +924,34 @@ def process_queue_single_run():
             company_name = country_code = industry = location = specific_prompt = None
 
         # Build call details
+        # Build call details
         current_prompt = load_all_prompts()
         customer_specific_prompt = specific_prompt.strip() if specific_prompt else ""
-        final_prompt = customer_specific_prompt if customer_specific_prompt else current_prompt
 
-        llm_prompt = f"{final_prompt}\n\nCustomer Notes:\n{notes}" if notes else f"{final_prompt}\n\nGreeting:\nHello, thank you for taking the time to speak with us."
-        details = f"These are the details of the customer you are speaking with. Name: {customer_name}:\n\n"
-        details += f"Customer Requirements: {customer_requirements}\n"
-        details += f"Customer-Specific Prompt: {final_prompt}\n"
-        details += f"Notes: {notes}\n"
-        details += f"Tasks: {tasks}\n"
-        details += f"Company Name: {company_name}\n"
-        details += f"Country Code: {country_code}\n"
-        details += f"Industry: {industry}\n"
-        details += f"Location: {location}\n"
-        details += f"LLM Prompt:\n{llm_prompt}\n"
+        # If both specific_prompt and current_prompt are available, combine them.
+        if customer_specific_prompt and current_prompt:
+            final_prompt = f"this is customer specific prompt:{customer_specific_prompt}\n\nthis is the general prompt:{current_prompt}"
+        elif customer_specific_prompt:
+            final_prompt = f"this is customer specific prompt:{customer_specific_prompt}"
+        else:
+            final_prompt = f"this is the general prompt:{current_prompt}"
 
+        # Handle notes and greeting
+        if notes:
+            llm_prompt = f"{final_prompt}\n\nCustomer Notes:\n{notes}"
+        else:
+            llm_prompt = f"{final_prompt}\n\n."
+
+        # Build customer details (without LLM prompt)
+        customer_details = f"These are the details of the customer you are speaking with. Name: {customer_name}:\n\n"
+        customer_details += f"Customer Requirements: {customer_requirements}\n"
+        customer_details += f"Notes: {notes}\n"
+        customer_details += f"Company Name: {company_name}\n"
+        customer_details += f"Country Code: {country_code}\n"
+        customer_details += f"Industry: {industry}\n"
+        customer_details += f"Location: {location}\n"
+
+        # Log the processing
         logger.info(
             f"[process_queue_single_run] Processing call for {customer_name} (ID: {customer_id})")
 
@@ -953,7 +970,8 @@ def process_queue_single_run():
         try:
             call_success = initiate_call(
                 phone_number=phone,
-                details=details,
+                customer_details=customer_details,  # Customer details only
+                llm_prompt=llm_prompt,              # LLM prompt separately
                 lead_name=customer_name,
                 customer_id=customer_id,
                 correlation_id=correlation_id,
@@ -1067,7 +1085,6 @@ async def upload_page(request: Request, username: str = Depends(get_current_user
     return templates.TemplateResponse("upload.html", {"request": request})
 
 
-@app.post("/submit-prompt")
 @app.post("/submit-prompt")
 async def submit_prompt(
     payload: PromptRequest,
