@@ -729,7 +729,8 @@ def initiate_call(
                 "customer_details": customer_details,  # Only customer details
                 "email": email or "Please check the details for email",
                 "today_date": datetime.now().strftime("%Y-%m-%d")
-            }
+            } 
+            
         }
 
         # Make the outbound call via Vapi
