@@ -709,7 +709,7 @@ def initiate_call(
         # Build dynamic variables for Vapi call
         # Build dynamic variables for Vapi call
         dynamic_vars = {
-            "first_message": generate_initial_message(customer_details),
+            "first_message": generate_initial_message(customer_details, llm_prompt),
             "customer_name": lead_name,
             "customer_details": customer_details,  # Customer-facing details
             "llm_prompt": llm_prompt,              # LLM prompt as separate variable
