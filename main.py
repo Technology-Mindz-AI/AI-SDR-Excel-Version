@@ -727,6 +727,7 @@ def initiate_call(
             "variableValues": {
                 "customer_name": lead_name,
                 "customer_details": customer_details,  # Only customer details
+                "llm_prompt": llm_prompt,              # LLM prompt as separate variable
                 "email": email or "Please check the details for email",
                 "today_date": datetime.now().strftime("%Y-%m-%d")
             } 
