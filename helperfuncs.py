@@ -355,6 +355,7 @@ def generate_initial_message(lead_data: str, llm_prompt: str) -> str:
                     f"Successfully generated initial message on attempt {attempt+1}.")
                 return chat_completion.choices[0].message.content
             else:
+                
                 logger.info(
                     f"Groq API did not return a valid response, attempt {attempt+1}.")
         except Exception as e:
@@ -364,3 +365,4 @@ def generate_initial_message(lead_data: str, llm_prompt: str) -> str:
             time.sleep(60)
     logger.info("Failed to get a valid response from Groq after 3 attempts.")
     return "[Error: Unable to generate initial message due to Groq API limit or error.]"
+ 
