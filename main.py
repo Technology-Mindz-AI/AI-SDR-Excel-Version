@@ -716,7 +716,7 @@ def initiate_call(
             "customer_id": customer_id,
             "email": email or "Please check the details for email",
             "call_id": call_id,
-            "today_date": datetime.now().strftime("%Y-%m-%d")
+            "today_date" : datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
         }
 
         # Or if you don't want to send LLM prompt to Vapi at all, remove it completely
@@ -729,7 +729,7 @@ def initiate_call(
                 "customer_details": customer_details,  # Only customer details
                 "llm_prompt": llm_prompt,              # LLM prompt as separate variable
                 "email": email or "Please check the details for email",
-                "today_date": datetime.now().strftime("%Y-%m-%d")
+                "today_date" : datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             } 
             
         }

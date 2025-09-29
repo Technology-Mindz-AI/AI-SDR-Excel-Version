@@ -7,13 +7,15 @@ from config import settings
 from groq import Groq
 
 
-
 # Database path
 DB_PATH = "queue.db"
 
 # --- DB Setup ---
+
+
 def init_db(logger):
-    logger.info("[init_db] Initializing the call_queue and customer_data databases and ensuring schema.")
+    logger.info(
+        "[init_db] Initializing the call_queue and customer_data databases and ensuring schema.")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     # Call queue for process management
@@ -58,11 +60,15 @@ def init_db(logger):
     conn.close()
 
 # --- Models ---
+
+
 class CallRequest(BaseModel):
 
-    type: str = Field(..., description="lead or opportunity or contact", example="lead")
-    ids: list[str] = Field(..., description="List of Entity IDs", example=["001xx000003DGb1AAG", "001xx000003DGb2AAG"])
-    # start_times: Optional[list[str]] = Field(None, 
+    type: str = Field(...,
+                      description="lead or opportunity or contact", example="lead")
+    ids: list[str] = Field(..., description="List of Entity IDs", example=[
+                           "001xx000003DGb1AAG", "001xx000003DGb2AAG"])
+    # start_times: Optional[list[str]] = Field(None,
     #                                   description="List of start_time strings aligned with ids (24-hour, e.g. '09:00' or '09:00:00')",
     #                                   example=["09:00", "10:00"])
     # end_times: Optional[list[str]] = Field(None,
@@ -72,25 +78,33 @@ class CallRequest(BaseModel):
     #                                 description="Re-engagement value to set for the call queue entries",
     #                                 example=["re-engage after 3 days"])
     start_times: Optional[str] = Field(None,
-                                      description="Start time for the call window (24-hour format, e.g. '09:00' or '09:00:00')",
-                                        example="09:00")
+                                       description="Start time for the call window (24-hour format, e.g. '09:00' or '09:00:00')",
+                                       example="09:00")
     end_times: Optional[str] = Field(None,
-                                      description="End time for the call window (24-hour format, e.g. '17:00' or '17:00:00')",
-                                        example="17:00")
+                                     description="End time for the call window (24-hour format, e.g. '17:00' or '17:00:00')",
+                                     example="17:00")
     re_engage_values: Optional[str] = Field(None,
-                                      description="Re-engagement value to set for the call queue entries",
-                                        example="re-engage after 3 days")
-    specific_prompt: Optional[str] = Field(None, description="Customer-specific prompt")  # NEW FIELD
+                                            description="Re-engagement value to set for the call queue entries",
+                                            example="re-engage after 3 days")
+    specific_prompt: Optional[str] = Field(
+        None, description="Customer-specific prompt")  # NEW FIELD
+
+
 class QueueUpdateRequest(BaseModel):
     id: int = Field(..., description="Queue entry ID")
-    status: Optional[str] = Field(None, description="New status for the call (queued, processing, called)")
-    phone_number: Optional[str] = Field(None, description="Update phone number")
+    status: Optional[str] = Field(
+        None, description="New status for the call (queued, processing, called)")
+    phone_number: Optional[str] = Field(
+        None, description="Update phone number")
     lead_name: Optional[str] = Field(None, description="Update lead name")
     details: Optional[str] = Field(None, description="Update details")
 
 # --- Core DB Functions ---
+
+
 def add_to_queue(entity_type: str, entity_id: str) -> bool:
-    logger.info(f"[add_to_queue] Attempting to add {entity_type}:{entity_id} to the queue.")
+    logger.info(
+        f"[add_to_queue] Attempting to add {entity_type}:{entity_id} to the queue.")
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -100,7 +114,8 @@ def add_to_queue(entity_type: str, entity_id: str) -> bool:
         logger.info(f"Added {entity_type}:{entity_id} to queue.")
         return True
     except sqlite3.IntegrityError:
-        logger.warning(f"[{entity_type}:{entity_id}] already exists in queue. Skipping addition.")
+        logger.warning(
+            f"[{entity_type}:{entity_id}] already exists in queue. Skipping addition.")
         return False
     except Exception as e:
         logger.error(f"Error adding to queue: {e}")
@@ -108,9 +123,12 @@ def add_to_queue(entity_type: str, entity_id: str) -> bool:
     finally:
         conn.close()
 
+
 def pop_next_call():
-    logger.info("[pop_next_call] Attempting to fetch and mark the next queued call as processing.")
-    conn = sqlite3.connect(DB_PATH, isolation_level='EXCLUSIVE')  # lock DB during transaction
+    logger.info(
+        "[pop_next_call] Attempting to fetch and mark the next queued call as processing.")
+    # lock DB during transaction
+    conn = sqlite3.connect(DB_PATH, isolation_level='EXCLUSIVE')
     try:
         c = conn.cursor()
 
@@ -150,7 +168,8 @@ def pop_next_call():
 
 
 def update_call_details(call_id: int, phone_number: str, lead_name: str, details: str):
-    logger.info(f"[update_call_details] Updating call details for call_id: {call_id}.")
+    logger.info(
+        f"[update_call_details] Updating call details for call_id: {call_id}.")
     """Updates the phone number, lead name, and details for a specific call queue entry."""
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -165,13 +184,16 @@ def update_call_details(call_id: int, phone_number: str, lead_name: str, details
     finally:
         conn.close()
 
+
 def mark_call_completed(call_id: int):
-    logger.info(f"[mark_call_completed] Marking call_id {call_id} as 'called'.")
+    logger.info(
+        f"[mark_call_completed] Marking call_id {call_id} as 'called'.")
     """Marks a call queue entry as 'called'."""
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        c.execute("UPDATE call_queue SET status = 'called' WHERE id = ?", (call_id,))
+        c.execute(
+            "UPDATE call_queue SET status = 'called' WHERE id = ?", (call_id,))
         conn.commit()
         logger.info(f"Marked call_id {call_id} as 'called'.")
     except Exception as e:
@@ -179,6 +201,7 @@ def mark_call_completed(call_id: int):
         raise RuntimeError(f"Failed to mark call completed: {e}")
     finally:
         conn.close()
+
 
 def pop_call_by_id(call_id: int):
     logger.info(f"[pop_call_by_id] Removing call_id {call_id} from the queue.")
@@ -191,7 +214,8 @@ def pop_call_by_id(call_id: int):
         if c.rowcount > 0:
             logger.info(f"Removed call_id {call_id} from queue.")
         else:
-            logger.warning(f"Attempted to remove call_id {call_id}, but it was not found.")
+            logger.warning(
+                f"Attempted to remove call_id {call_id}, but it was not found.")
     except Exception as e:
         logger.error(f"Error popping call_id {call_id}: {e}")
     finally:
@@ -206,7 +230,8 @@ def pop_call_by_id(call_id: int):
 #     except Exception as e:
 #         logger.error(f"Error fetching contact details: {e}")
 #         raise HTTPException(status_code=500, detail="Failed to fetch contact details")
-    
+
+
 COUNTRY_CODE_MAP = {
     # North America (23 entries + aliases)
     "united states": "US", "usa": "US", "us": "US", "america": "US", "us of a": "US", "united states of america": "US", "canada": "CA", "can": "CA",
@@ -287,7 +312,8 @@ COUNTRY_CODE_MAP = {
 # Assuming these constants are set somewhere in your environment
 DB_PATH = "queue.db"
 
-def generate_initial_message(lead_data: str, llm_prompt: str = "") -> str:
+
+def generate_initial_message(lead_data: str, llm_prompt: str) -> str:
     import time
     client = Groq(api_key=settings.GROQ_API_KEY)
 
@@ -301,15 +327,15 @@ def generate_initial_message(lead_data: str, llm_prompt: str = "") -> str:
         "Keep this message concise, friendly, and engaging. Form a short summary of the lead data provided, and use it to create a personalized greeting. But remember to keep the message short and engaging, as if you are speaking to the customer in real-time."
         "**IMPORTANT**"
         "Make the greeting message short and concise."
-        "**Necessarily** after saying 'Hi {name of the user}, say 'This is Technology Mindz's AI assistant.' Then talk a little about what you can see in their {lead data} in not more than 10 to 20 words and then necessarily ask the user if this is the right time to talk."
-       
+        "**Necessarily** after saying 'Hi {name of the user}, say 'This is Technology Mindz's AI assistant.' Then talk a little about what you can see in their {lead data} and if {llm_prompt} in not more than 10 to 20 words and then necessarily ask the user if this is the right time to talk."
+
     )
     if llm_prompt:
         enhanced_prompt = f"{system_prompt}\n\nAdditional Instructions:\n{llm_prompt}"
     else:
         enhanced_prompt = system_prompt
-        
-    user_prompt = f"Here is the customer data:\n{lead_data[:8000]}\nGenerate Technology Mindz's AI Assistant a first message that Technology Mindz's AI assistant would say when reaching out to understand their requirements and offer help."
+
+    user_prompt = f"Here is the customer data:\n{lead_data[:8000]} and this is  the LLM prompt: {llm_prompt}\nGenerate Technology Mindz's AI Assistant a first message that Technology Mindz's AI assistant would say when reaching out to understand their requirements and offer help."
 
     max_retries = 3
     for attempt in range(max_retries):
@@ -323,12 +349,18 @@ def generate_initial_message(lead_data: str, llm_prompt: str = "") -> str:
             )
             # If Groq returns a valid response, break and return
             if hasattr(chat_completion, 'choices') and chat_completion.choices and hasattr(chat_completion.choices[0], 'message'):
+                logger.info(llm_prompt)
+                logger.info(lead_data)
+                logger.info(
+                    f"Successfully generated initial message on attempt {attempt+1}.")
                 return chat_completion.choices[0].message.content
             else:
-                logger.info(f"Groq API did not return a valid response, attempt {attempt+1}.")
+                logger.info(
+                    f"Groq API did not return a valid response, attempt {attempt+1}.")
         except Exception as e:
             # Check for Groq limit exceeded or non-200 response
-            logger.info(f"Groq API call failed (attempt {attempt+1}): {e}. Retrying in 60 seconds...")
+            logger.info(
+                f"Groq API call failed (attempt {attempt+1}): {e}. Retrying in 60 seconds...")
             time.sleep(60)
     logger.info("Failed to get a valid response from Groq after 3 attempts.")
     return "[Error: Unable to generate initial message due to Groq API limit or error.]"
