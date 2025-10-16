@@ -835,15 +835,23 @@ def initiate_call(
 
 
 def load_all_prompts() -> str:
+    """Reads all prompts from the prompt file and returns the current prompt."""
+    current_prompt = ""
     """Reads the current prompt from the prompt file (only one prompt allowed)."""
     if not os.path.exists(PROMPT_FILE):
+        logger.warning(f"[load_all_prompts] Prompt file not found at {PROMPT_FILE}")
         return ""
     with open(PROMPT_FILE, "r", encoding="utf-8") as f:
         # Return only the first line (current prompt) or empty string
         lines = [line.strip() for line in f if line.strip()]
-        return lines[0] if lines else ""
+        all_prompts = lines
+        current_prompt = lines[0] if lines else ""
+        
+        logger.info(f"[load_all_prompts] Current prompt: {current_prompt}")
+        logger.info(f"[load_all_prompts] All prompts: {all_prompts}")
+        
+        return current_prompt, 
 # --- Shared Queue Processing Function ---
-
 
 def process_queue_single_run():
     """Process the next queued call with enhanced error handling and status tracking"""
@@ -940,7 +948,7 @@ def process_queue_single_run():
 
         # Handle notes and greeting
         if notes:
-            llm_prompt = f"{final_prompt}\n\nCustomer Notes:\n{notes}"
+            llm_prompt = f"{final_prompt}\n\n."
         else:
             llm_prompt = f"{final_prompt}\n\n."
 

@@ -285,7 +285,7 @@ def send_meeting_invite(parsed, customer_name, customer_email):
         f"[send_meeting_invite] Virtual meeting status: {meeting_status_virtual}")
     meeting_time_in_person_raw = parsed.get("meeting_time_in_person_raw", "")
     meeting_time_virtual_raw = parsed.get("meeting_time_virtual_raw", "")
-
+        
     if not meeting_status:
         logger.info("[send_meeting_invite] No meeting scheduled")
         return
