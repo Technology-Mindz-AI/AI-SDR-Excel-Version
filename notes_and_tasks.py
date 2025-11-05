@@ -312,7 +312,7 @@ def send_meeting_invite(parsed, customer_name, customer_email):
                 meeting_time_in_person = meeting_time_in_person_est.isoformat()
                 response = requests.post(
                     headers={"Content-Type": "application/json"},
-                    url="https://func-send-calendar-invite-tm-dev-fhdcbce9ebdpcmcg.eastus-01.azurewebsites.net/api/schedule_meeting",
+                    url="http://103.174.102.89:8013/api/schedule_meeting",
                     json={
                         "attendee_email": customer_email,
                         "attendee_name": customer_name,
@@ -368,7 +368,7 @@ def send_meeting_invite(parsed, customer_name, customer_email):
                 meeting_time_virtual = meeting_time_virtual_est.isoformat()
                 response = requests.post(
                     headers={"Content-Type": "application/json"},
-                    url="https://func-send-calendar-invite-tm-dev-fhdcbce9ebdpcmcg.eastus-01.azurewebsites.net/api/schedule_meeting",
+                    url="http://103.174.102.89:8013/api/schedule_meeting",
                     json={
                         "attendee_email": customer_email,
                         "attendee_name": customer_name,
